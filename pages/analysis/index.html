@@ -8,6 +8,8 @@
 
     <title>Cheese Analysis</title>
 
+    <link rel="stylesheet" href="../../assets/css/nav.css" />
+    <link rel="stylesheet" href="../../assets/css/board-layout.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="../../mobile-gate.css" />
   </head>
@@ -108,9 +110,20 @@
           <div class="player-clock" id="blackClock">10:00</div>
         </div>
 
-        <!-- BOARD -->
+        <!-- BOARD ROW: EVAL BAR + BOARD -->
 
-        <div class="board">
+        <div class="board-row">
+
+          <!-- EVAL BAR -->
+
+          <div class="eval-container">
+            <div id="evalFill" class="eval-fill"></div>
+            <div id="evalText" class="eval-text">0.0</div>
+          </div>
+
+          <!-- BOARD -->
+
+          <div class="board">
           <!-- ROW 8 -->
 
           <div class="square light" id="a8">
@@ -262,6 +275,8 @@
           <div class="square light" id="h1">
             <img src="../../assets/pieces/w_rook_png_shadow_512px.png" class="piece" />
           </div>
+          </div>
+
         </div>
 
         <!-- WHITE PLAYER -->
@@ -276,13 +291,6 @@
           <div class="player-clock" id="whiteClock">10:00</div>
         </div>
       </div>
-
-      <!-- EVAL BAR -->
-
-      <div class="eval-container">
-        <div id="evalFill" class="eval-fill"></div>
-      </div>
-      <div id="evalText" class="eval-text">0.0</div>
 
       <!-- SIDEBAR -->
 
@@ -465,6 +473,8 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+    <script src="../../assets/js/board-core.js"></script>
 
     <script src="script.js"></script>
   </body>

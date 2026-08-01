@@ -1,0 +1,299 @@
+/* Cheese — shared board-page layout system
+   Used by any page built around the app-container / board-area / sidebar
+   pattern (Analysis, Training, ...). Defines the board's responsive size
+   and every dimension derived from it (player panels, eval bar, sidebar),
+   so pages that include this file always render the board at the same
+   size and proportions and stay in sync automatically. Load this file
+   BEFORE the page's own style.css so page-specific rules can still
+   override where needed. */
+
+/* =====================
+   RESPONSIVE LAYOUT VARIABLES
+   ===================== */
+
+:root{
+    --board-size: clamp(420px, min(40vw, calc(100vh - 150px)), 960px);
+    --player-h: clamp(36px, 5.2vh, 60px);
+    --row-gap: clamp(8px, 1.4vh, 18px);
+    --eval-w: clamp(28px, 2.6vw, 58px);
+    --gap-md: clamp(14px, 1.5vw, 32px);
+    --sidebar-w: clamp(320px, 27vw, 600px);
+    --board-area-h: calc(var(--board-size) + (var(--player-h) * 2) + (var(--row-gap) * 2));
+}
+
+/* APP CONTAINER */
+
+.app-container{
+
+    width:100vw;
+
+    height:100vh;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:var(--gap-md);
+}
+
+/* LEFT / RIGHT FLEXIBLE SPACERS — centre the board+sidebar group */
+
+.left-space,
+.right-space{
+
+    flex:1 1 auto;
+
+    min-width:0;
+}
+
+/* BOARD AREA */
+
+.board-area{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-end;
+
+    gap:var(--row-gap);
+
+    flex-shrink:0;
+}
+
+/* BOARD ROW — eval bar + board, stretched to the same height */
+
+.board-row{
+
+    display:flex;
+
+    align-items:stretch;
+
+    gap:var(--gap-md);
+}
+
+/* SIDEBAR */
+
+.sidebar{
+
+    width:var(--sidebar-w);
+
+    height:var(--board-area-h);
+
+    display:flex;
+
+    flex-shrink:0;
+}
+
+/* PLAYER PANELS */
+
+.player{
+
+    width:var(--board-size);
+
+    height:var(--player-h);
+
+    background:
+    rgba(15,20,35,0.82);
+
+    backdrop-filter:blur(10px);
+
+    border-radius:10px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:0 clamp(10px, 1vw, 16px);
+
+    color:white;
+
+    box-shadow:
+    0 0 14px rgba(0,0,0,0.22);
+
+    overflow:hidden;
+
+    flex-shrink:0;
+}
+
+/* PLAYER LEFT */
+
+.player-left{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    min-width:0;
+}
+
+/* PLAYER PFP */
+
+.player-pfp{
+
+    width:clamp(22px, 2vw, 30px);
+
+    height:clamp(22px, 2vw, 30px);
+
+    border-radius:8px;
+
+    flex-shrink:0;
+}
+
+.black-pfp{
+
+    background:black;
+
+    border:2px solid white;
+}
+
+.white-pfp{
+
+    background:white;
+
+    border:2px solid black;
+}
+
+/* PLAYER NAME */
+
+.player-name{
+
+    font-size:clamp(14px, 1.05vw, 18px);
+
+    font-weight:600;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+}
+
+/* CLOCK */
+
+.player-clock{
+
+    font-size:clamp(14px, 1.05vw, 18px);
+
+    font-weight:700;
+
+    background:
+    rgba(255,255,255,0.08);
+
+    padding:clamp(4px, 0.5vw, 6px) clamp(8px, 1vw, 12px);
+
+    border-radius:8px;
+
+    flex-shrink:0;
+}
+
+/* BOARD */
+
+.board{
+
+    width:var(--board-size);
+
+    aspect-ratio:1;
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(8,1fr);
+
+    grid-template-rows:
+    repeat(8,1fr);
+
+    overflow:hidden;
+
+    border-radius:10px;
+
+    box-shadow:
+    0 0 24px rgba(0,0,0,0.35);
+
+    flex-shrink:0;
+}
+
+/* EVAL BAR CONTAINER — a normal flex item stretched to match .board's
+   height by .board-row (align-items:stretch), so it never needs its own
+   hardcoded height or magic-number position. Only present on pages whose
+   HTML includes an .eval-container (currently Analysis); harmless no-op
+   on pages that don't. */
+
+.eval-container{
+
+    position:relative;
+
+    width:var(--eval-w);
+
+    flex-shrink:0;
+
+    background:
+    rgba(0,0,0,0.45);
+
+    border-radius:10px;
+
+    overflow:hidden;
+
+    box-shadow:
+    0 0 14px rgba(0,0,0,0.35);
+
+    border:
+    2px solid
+    rgba(255,255,255,0.08);
+}
+
+/* EVAL FILL */
+
+.eval-fill{
+
+    position:absolute;
+
+    bottom:0;
+
+    left:0;
+
+    width:100%;
+
+    height:50%;
+
+    background:white;
+
+    transition:
+    height 0.35s ease;
+}
+
+/* EVAL TEXT — pinned near the bottom of the bar, centred */
+
+.eval-text{
+
+    position:absolute;
+
+    bottom:clamp(8px, 1.2vh, 14px);
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    color:black;
+
+    font-size:clamp(11px, 0.85vw, 16px);
+
+    font-weight:800;
+
+    z-index:5;
+
+    pointer-events:none;
+
+    white-space:nowrap;
+
+    transition:0.2s;
+
+    text-shadow:
+    0 0 6px rgba(0,0,0,0.18);
+}
