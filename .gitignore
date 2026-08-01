@@ -1,0 +1,17 @@
+# Local tooling / editor state (not project source)
+.claude/
+.vscode/
+.idea/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets / environment
+.env
+.env.*
+*.pem
+*.key
+*credentials*
+*secret*

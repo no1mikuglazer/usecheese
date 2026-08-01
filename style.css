@@ -18,7 +18,7 @@
 body {
     height: 100vh;
     overflow: auto;
-    background-image: url("Background/custom_bg1.png");
+    background-image: url("assets/backgrounds/custom_bg1.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

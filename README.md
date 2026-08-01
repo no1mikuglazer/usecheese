@@ -49,19 +49,19 @@ _Screenshots will be added here._
 
 **Home**
 
-![Home](Screenshots/home.png)
+![Home](assets/screenshots/home.png)
 
 **Analysis**
 
-![Analysis](Screenshots/analysis.png)
+![Analysis](assets/screenshots/analysis.png)
 
 **Database**
 
-![Database](Screenshots/database.png)
+![Database](assets/screenshots/database.png)
 
 **Training**
 
-![Training](Screenshots/training.png)
+![Training](assets/screenshots/training.png)
 
 ---
 

@@ -1,0 +1,289 @@
+/* Cheese — Puzzles page */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* =====================
+   BODY
+   ===================== */
+/* Same background implementation as the Analysis page:
+   custom_bg1.png, cover sizing, centred, no-repeat — so the page matches
+   the rest of Cheese visually. */
+
+body {
+    height: 100vh;
+    overflow: auto;
+    background-image: url("../../assets/backgrounds/custom_bg1.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+/* =====================
+   LEFT NAVIGATION SIDEBAR
+   ===================== */
+
+.left-nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 220px;
+    height: 100vh;
+    background: rgba(12, 16, 28, 0.72);
+    backdrop-filter: blur(28px) saturate(135%);
+    -webkit-backdrop-filter: blur(28px) saturate(135%);
+    border-right: 1px solid rgba(255, 255, 255, 0.10);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    box-shadow: 6px 0 34px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                inset -1px 0 0 rgba(255, 255, 255, 0.04);
+    padding: 0 0 24px 0;
+}
+
+/* LOGO */
+
+a.left-nav-logo,
+a.left-nav-item {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+}
+
+a.left-nav-logo {
+    cursor: pointer;
+}
+
+a.left-nav-logo:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Navigable (non-active, non-disabled) nav item — clickable link.
+   Explicit white text so the link never falls back to the inherited body
+   colour. The active item is highlighted via its own active rule. */
+a.left-nav-item-link {
+    cursor: pointer;
+    width: 100%;
+    color: white;
+}
+
+a.left-nav-item-link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: white;
+    transform: translateX(3px);
+}
+
+.left-nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 26px 20px 22px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    margin-bottom: 16px;
+}
+
+.left-nav-logo-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+}
+
+.left-nav-logo-text {
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 0.5px;
+    font-family: Arial, sans-serif;
+}
+
+/* NAV LIST */
+
+.left-nav-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 12px;
+    flex: 1;
+}
+
+/* NAV ITEM */
+
+.left-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: Arial, sans-serif;
+    cursor: default;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+    position: relative;
+    user-select: none;
+}
+
+/* ACTIVE */
+
+.left-nav-active {
+    background: rgba(255, 255, 255, 0.10);
+    color: white;
+    cursor: default;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+/* ACTIVE accent bar */
+
+.left-nav-active::before {
+    content: "";
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 0 3px 3px 0;
+}
+
+/* DISABLED */
+
+.left-nav-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.left-nav-disabled:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.65);
+    transform: translateX(3px);
+    opacity: 0.65;
+}
+
+/* COMING SOON tooltip */
+
+.left-nav-disabled::after {
+    content: attr(data-soon);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: rgba(20, 26, 45, 0.96);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 7px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 200;
+}
+
+.left-nav-disabled:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* ICON */
+
+.left-nav-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+/* ACTIVE — pure white text + icon (inactive items unchanged) */
+/* Specificity (0,2,0) to override `a.left-nav-item { color: inherit }` (0,1,1).
+   The icon uses stroke="currentColor", so pure-white text makes it white too. */
+
+.left-nav-item.left-nav-active {
+    color: #fff;
+}
+
+.left-nav-item.left-nav-active .left-nav-icon {
+    opacity: 1;
+}
+
+/* =====================
+   MAIN CONTENT
+   ===================== */
+/* Blank content area, offset past the fixed 220px sidebar — ready for the
+   puzzle UI to be built here later. */
+
+.puzzles-main {
+    margin-left: 220px;
+    min-height: 100vh;
+    padding: 60px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* HERO */
+
+.pz-hero {
+    position: relative;
+    max-width: 640px;
+    animation: pzRise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+/* Soft dark radial "spotlight" behind the hero text only — fades to fully
+   transparent at the edges so the background image stays visible (no box). */
+.pz-hero::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 155%;
+    height: 240%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center,
+        rgba(6, 9, 16, 0.58) 0%,
+        rgba(6, 9, 16, 0.42) 34%,
+        rgba(6, 9, 16, 0.18) 58%,
+        rgba(6, 9, 16, 0.00) 78%);
+    filter: blur(22px);
+}
+.pz-title {
+    font-size: clamp(46px, 6vw, 66px);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #eef1f8;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.pz-subtitle {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(244, 247, 253, 0.5);
+    margin: 12px 0 24px;
+}
+.pz-message {
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: rgba(233, 238, 246, 0.82);
+    margin: 0 auto;
+    max-width: 560px;
+}
+
+@keyframes pzRise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

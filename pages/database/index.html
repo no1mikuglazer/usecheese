@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- Cheese — Database page -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cheese — Database</title>
+    <meta name="description" content="Cheese Database — browse famous chess players and explore their greatest games." />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="../../mobile-gate.css" />
+  </head>
+
+  <body>
+
+    <!-- MOBILE GATE (small viewports only) -->
+    <div class="mobile-gate">
+      <div class="mobile-gate-card">
+        <svg class="mobile-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
+        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+      </div>
+    </div>
+
+    <!-- LEFT NAV SIDEBAR -->
+    <nav class="left-nav">
+
+      <a href="../../index.html" class="left-nav-logo" aria-label="Cheese — Home">
+        <svg class="left-nav-logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="14" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+          <path d="M10 24 L10 21 C10 21 8 19 8 16 C8 12 11 9 13 8 C13 8 12 10 13 11 C14 10 15 8 17 8 C20 8 22 10 22 13 C22 16 20 18 19 19 L19 24 Z" fill="rgba(255,255,255,0.75)"/>
+          <rect x="9" y="23.5" width="14" height="2" rx="1" fill="rgba(255,255,255,0.6)"/>
+        </svg>
+        <span class="left-nav-logo-text">Cheese</span>
+      </a>
+
+      <ul class="left-nav-items">
+
+        <li>
+          <a href="../analysis/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span>Analysis</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../opening-explorer/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span>Opening Explorer</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../puzzles/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+            <span>Puzzles</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../training/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            <span>Training</span>
+          </a>
+        </li>
+
+        <a href="../database/index.html" class="left-nav-item left-nav-active">
+          <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          <span>Database</span>
+        </a>
+
+      </ul>
+
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="db-container">
+
+      <!-- PLAYERS VIEW -->
+      <section class="db-view" id="dbPlayersView">
+        <header class="db-header">
+          <h1 class="db-page-title">Database</h1>
+          <p class="db-page-subtitle">Browse famous chess players and explore their greatest games.</p>
+        </header>
+        <div class="db-players-grid" id="dbPlayersGrid"></div>
+      </section>
+
+      <!-- PLAYER (GAMES) VIEW -->
+      <section class="db-view" id="dbPlayerView" hidden>
+        <button type="button" class="db-back" id="dbBackBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          <span>Players</span>
+        </button>
+
+        <header class="db-player-header">
+          <div class="db-player-photo" id="dbPlayerPhoto"></div>
+          <div class="db-player-meta">
+            <h1 class="db-player-name" id="dbPlayerName"></h1>
+            <p class="db-player-sub" id="dbPlayerSub"></p>
+          </div>
+        </header>
+
+        <div class="db-status" id="dbStatus"></div>
+        <div class="db-games-grid" id="dbGamesGrid"></div>
+      </section>
+
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
