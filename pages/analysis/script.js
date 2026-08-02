@@ -345,7 +345,10 @@ for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
 function playMove(moveInput, suppressGlide, suppressSound) {
   chess.load(currentNode.fen);
 
-  const move = chess.move(moveInput);
+  // sloppy: accept the loose SAN found in the ECO data (e.g. the needlessly
+  // disambiguated "Ncb4"), matching the parser already used for PGN import.
+  // Illegal moves still return null, so drag/click validation is unaffected.
+  const move = chess.move(moveInput, { sloppy: true });
 
   if (!move) {
     // Illegal move attempt — if the mover is in check, flash the king
@@ -789,6 +792,8 @@ document.addEventListener("keydown", (event) => {
 newGameBtn.addEventListener("click", () => {
   customPositionName = null;
 
+  resetPlayerNames();
+
   chess.reset();
 
   root.children = [];
@@ -820,6 +825,8 @@ deleteGameBtn.addEventListener("click", () => {
   if (!confirm("Delete current analysis?")) return;
 
   customPositionName = null;
+
+  resetPlayerNames();
 
   chess.reset();
 

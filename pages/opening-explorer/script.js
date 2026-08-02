@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Opening Explorer: could not store selected opening', err);
         }
 
-        window.location.href = '../Analysis/index.html';
+        window.location.href = '../analysis/index.html';
     });
 
     // Load more as the sentinel scrolls into view

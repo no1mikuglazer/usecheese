@@ -682,9 +682,27 @@ function mainlineTip() {
   return node;
 }
 
+// Restore the player-name headers to their defaults. PGN import overwrites them
+// via applyPGNMetadata, so every reset must put them back or the previous game's
+// players linger over a fresh board. Missing ids are skipped (Training has only
+// the two board panels).
+function resetPlayerNames() {
+  const defaults = {
+    apWhiteName: "White",
+    apBlackName: "Black",
+    whitePlayerName: "White",
+    blackPlayerName: "Black",
+  };
+  for (const [id, text] of Object.entries(defaults)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+}
+
 // Reset board + tree to an empty game (mirrors the New/Delete reset)
 function resetAnalysisState() {
   customPositionName = null;
+  resetPlayerNames();
   chess.reset();
   root.children = [];
   root.engineLine = [];

@@ -93,6 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const subEl       = document.getElementById('dbPlayerSub');
 
     let currentGames = [];   // [{ pgn, title, event, date, result }]
+    let loadToken = 0;       // bumped per openPlayer call so a superseded (slow)
+                             // PGN fetch never renders over the newer player
 
     // ── Players ────────────────────────────────────────────────────────────────
     function renderPlayers() {
@@ -184,6 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Open a player → load + parse PGN → render game cards ────────────────────
     async function openPlayer(player) {
+        const token = ++loadToken;
+
         playersView.hidden = true;
         playerView.hidden = false;
         window.scrollTo(0, 0);
@@ -202,9 +206,14 @@ document.addEventListener('DOMContentLoaded', () => {
             text = await res.text();
         } catch (err) {
             console.error('Database: failed to load PGN', err);
+            if (token !== loadToken) return;   // superseded — leave the newer view alone
             statusEl.textContent = 'Could not load games for ' + player.name + '.';
             return;
         }
+
+        // Another player was opened while this PGN was still downloading; drop
+        // this result instead of appending it under the newer player's heading.
+        if (token !== loadToken) return;
 
         currentGames = splitPGNGames(text).map(chunk => buildGame(chunk, player));
 
@@ -250,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Database: could not store game PGN', err);
         }
-        window.location.href = '../Analysis/index.html';
+        window.location.href = '../analysis/index.html';
     });
 
     // ── Routing (hash-based, so refresh/back/forward work) ─────────────────────

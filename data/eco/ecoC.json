@@ -26294,7 +26294,7 @@
     "rnbk1bnr/pppp3p/6B1/4N2Q/3Pp3/8/PPP2P1P/RNB1K2q w Q - 0 9": {
         "eco": "C40",
         "name": "Duke of Courland Variation, Latvian",
-        "moves": "1. e4 e5 2. Nf3 f5 3. Bc4 fxe4 4. Nxe5 Qg5 5. d4 Qxg2 6. Qh5 g6 7. Bf7 Kd8 8. Bg6 Qh1",
+        "moves": "1. e4 e5 2. Nf3 f5 3. Bc4 fxe4 4. Nxe5 Qg5 5. d4 Qxg2 6. Qh5 g6 7. Bf7 Kd8 8. Bxg6 Qxh1",
         "src": "chessGraph"
     },
     "r2qkbnr/3b1ppp/p1Qp4/1pp5/4P3/1B6/PPP2PPP/RNB1K2R w KQkq - 4 11": {
