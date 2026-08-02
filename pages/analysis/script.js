@@ -540,11 +540,11 @@ function startDrag(e, square) {
   ghost.className = "piece drag-ghost";
   ghost.style.cssText = `
     position:fixed;pointer-events:none;z-index:1000;
+    left:0;top:0;
     width:${squareSize}px;height:${squareSize}px;
-    transform:translate(-50%,-50%) scale(1.08);
-    left:${clientX}px;top:${clientY}px;
-    will-change:left,top;
+    will-change:transform;
   `;
+  setGhostTransform(ghost, clientX, clientY, DRAG_GHOST_SCALE);
   document.body.appendChild(ghost);
 
   pieceEl.style.opacity = "0.25";
@@ -576,7 +576,7 @@ boardElForDrag.addEventListener(
   },
   { passive: false },
 );
-document.addEventListener("mousemove", onDragMove);
+document.addEventListener("mousemove", onDragMove, { passive: true });
 document.addEventListener("touchmove", onDragMove, { passive: true });
 document.addEventListener("mouseup", onDragEnd);
 document.addEventListener("touchend", onDragEnd);

@@ -200,25 +200,58 @@ function isLegalMove(from, to) {
   return moves.some((m) => m.to === to);
 }
 
-function animateSnapBack(ghost, toRect, fromRect) {
+// Drag ghost is positioned with `transform: translate3d(...)` instead of
+// left/top: transform is compositor-only (GPU), while left/top are
+// layout-triggering and force a synchronous reflow on every pointer-move
+// event — that reflow-per-move is what produced the jitter/stutter feel.
+const DRAG_GHOST_SCALE = 1.08;
+
+function setGhostTransform(ghost, x, y, scale) {
+  ghost.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) scale(${scale})`;
+}
+
+function animateSnapBack(ghost, fromRect) {
   // Piece was dropped illegally — animate ghost back to source then remove
-  ghost.style.transition =
-    "left 180ms cubic-bezier(0.25,0.1,0.25,1), top 180ms cubic-bezier(0.25,0.1,0.25,1)";
-  ghost.style.left = fromRect.left + fromRect.width / 2 + "px";
-  ghost.style.top = fromRect.top + fromRect.height / 2 + "px";
+  void ghost.getBoundingClientRect(); // flush current transform so the transition below animates from it, not jumps
+  ghost.style.transition = "transform 180ms cubic-bezier(0.25,0.1,0.25,1)";
+  setGhostTransform(
+    ghost,
+    fromRect.left + fromRect.width / 2,
+    fromRect.top + fromRect.height / 2,
+    DRAG_GHOST_SCALE,
+  );
   ghost.addEventListener("transitionend", () => ghost.remove(), { once: true });
 }
+
+// Pointer/touch events can fire faster than the display refreshes; only the
+// most recent point matters, so coalesce them into one ghost update per
+// animation frame instead of writing styles on every single event.
+let dragMoveRAF = null;
+let pendingDragPoint = null;
 
 function onDragMove(e) {
   if (!dragState) return;
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  dragState.ghost.style.left = clientX + "px";
-  dragState.ghost.style.top = clientY + "px";
+  pendingDragPoint = { x: clientX, y: clientY };
+
+  if (dragMoveRAF) return; // an update is already queued for this frame
+
+  dragMoveRAF = requestAnimationFrame(() => {
+    dragMoveRAF = null;
+    if (!dragState || !pendingDragPoint) return;
+    setGhostTransform(dragState.ghost, pendingDragPoint.x, pendingDragPoint.y, DRAG_GHOST_SCALE);
+  });
 }
 
 function onDragEnd(e) {
   if (!dragState) return;
+
+  if (dragMoveRAF) {
+    cancelAnimationFrame(dragMoveRAF);
+    dragMoveRAF = null;
+  }
+  pendingDragPoint = null;
 
   const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
   const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
@@ -237,8 +270,7 @@ function onDragEnd(e) {
     // Restore piece opacity
     pieceEl.style.opacity = "1";
     // Animate ghost back to source
-    const toRect = ghost.getBoundingClientRect();
-    animateSnapBack(ghost, toRect, fromRect);
+    animateSnapBack(ghost, fromRect);
     // Real illegal move attempt while in check → flash the king.
     // Skip for off-board / same-square drops (not a move attempt).
     if (toId && toId !== fromSquare.id) {
