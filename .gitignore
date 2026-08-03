@@ -11,7 +11,18 @@ desktop.ini
 # Secrets / environment
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *credentials*
 *secret*
+
+# Backend dependencies
+node_modules/
+
+# Generated data — rebuilt from the source parquet, never committed.
+# See server/README.md for the import command.
+*.parquet
+server/data/*.sqlite
+server/data/*.sqlite-wal
+server/data/*.sqlite-shm

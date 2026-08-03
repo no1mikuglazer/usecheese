@@ -313,11 +313,53 @@ Completed: 02/08/2026
 - Fixed Database → Opening Explorer → Analysis handoff data bugs
 - Corrected ECO opening data (`data/eco/ecoC.json`)
 
+# V1.3 — Puzzles & the First Backend
+
+Completed: 03/08/2026
+
+## Added
+
+- **Puzzle system** — a full tactics trainer on the Puzzles page
+- **Cheese backend API** (`server/`) — the project's first server-side component
+- Puzzle database built from the Lichess puzzle export (5.8M puzzles)
+- Random puzzle lookup by rating band
+- Difficulty presets (Beginner through Expert) plus a custom rating range
+- Progressive hint system (reveals the piece, then the full move)
+- Automatic board orientation to the solving side
+- Move-by-move solution validation with correct/incorrect feedback
+- Alternate-checkmate acceptance (any mate ends a puzzle, not just the recorded move)
+- Puzzle themes revealed on completion
+- Session tracking for solved / attempted / streak
+- Retry to restart the current puzzle
+- Shared `assets/js/api-client.js` for frontend-to-API calls
+
+## Changed
+
+- Cheese is no longer a purely client-side application. The website remains
+  fully static and is still deployed as before; the new API is a **separate**
+  service that only the Puzzles page calls.
+- Puzzles page now uses the shared `nav.css` and `board-layout.css` instead of
+  duplicating those rules locally.
+
+## Technical Notes
+
+- Backend is Node.js + Express, with SQLite (`better-sqlite3`) as the datastore
+- Puzzle data is imported from a parquet export by a one-time script
+  (`server/scripts/import-puzzles.js`); the resulting database is not committed
+- Random puzzle selection avoids `ORDER BY RANDOM()` — rows are stored in
+  rating order so the lookup is two index-boundary reads plus a primary-key
+  hit, roughly 700x faster than a scan at this table size
+- Puzzle solving reuses the existing `board-core.js` rendering, drag-and-drop
+  and highlight helpers rather than duplicating them
+- Configuration is entirely environment-variable driven; no secrets are
+  committed (see `server/.env.example`)
+
 ### Upcoming
 
 Future updates are planned to include:
 
-- Full Puzzle system
+- User accounts and cloud-synced progress
+- Puzzle themes and motif filtering
 - Mobile support
 - Additional master games
 - More training options

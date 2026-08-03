@@ -1,2 +1,814 @@
-/* Cheese — Puzzles page */
-// Intentionally empty for now. Puzzle functionality will be implemented here.
+/* Cheese — Puzzles page
+   Tactics trainer. Puzzles come from the Cheese API (see assets/js/api-client.js);
+   board rendering, drag-and-drop and highlight helpers are shared with Analysis
+   and Training via assets/js/board-core.js.
+
+   Puzzle data follows the Lichess convention: `fen` is the position BEFORE
+   moves[0], and moves[0] is the opponent's move that creates the puzzle. It is
+   played automatically. The solver then plays the odd-indexed moves, with the
+   even-indexed ones being the opponent's forced replies. */
+
+// ── Globals board-core.js reads ─────────────────────────────────────────────
+// board-core.js operates on these names directly, so they must exist with the
+// same shapes Analysis and Training give them.
+
+const squares = document.querySelectorAll(".square");
+const chess = new Chess();
+
+// board-core.js reads `currentNode.fen` (for legality checks) and
+// `currentNode.move` (for the last-move highlight). Puzzles are a single
+// forced line with no branching, so a plain object stands in for Analysis's
+// GameNode tree.
+let currentNode = { fen: chess.fen(), move: null };
+
+let selectedSquare = null;
+let dragState = null;
+let pendingPromotion = null;
+
+const MOVE_SOUND_FILES = {
+  move: "../../assets/sounds/move-self.mp3",
+  capture: "../../assets/sounds/capture.mp3",
+  castle: "../../assets/sounds/castle.mp3",
+  check: "../../assets/sounds/move-check.mp3",
+  promote: "../../assets/sounds/promote.mp3",
+};
+
+const moveSounds = {};
+for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
+  const audio = new Audio(src);
+  audio.preload = "auto";
+  moveSounds[name] = audio;
+}
+
+// ── Puzzle state ────────────────────────────────────────────────────────────
+
+const PUZZLE_STATE = {
+  LOADING: "loading",
+  SOLVING: "solving",
+  SOLVED: "solved",
+  ERROR: "error",
+};
+
+let currentPuzzle = null;
+let solutionMoves = [];
+let solutionIndex = 0; // index of the move the solver must find next
+let solverColor = "w";
+let puzzleState = PUZZLE_STATE.LOADING;
+let awaitingOpponent = false; // true while a scripted reply is being played
+let usedHint = false;
+let failedThisPuzzle = false;
+let hintLevel = 0; // 0 = none, 1 = piece shown, 2 = full move shown
+let boardFlipped = false;
+
+const session = { solved: 0, attempted: 0, streak: 0 };
+
+// Timers are tracked so a new puzzle never gets interrupted by a reply
+// scheduled for the previous one.
+let pendingTimers = [];
+
+function scheduleStep(fn, delay) {
+  const id = setTimeout(fn, delay);
+  pendingTimers.push(id);
+  return id;
+}
+
+function cancelPendingSteps() {
+  pendingTimers.forEach(clearTimeout);
+  pendingTimers = [];
+}
+
+// Delay before the opponent's scripted reply, long enough to read the position.
+const OPPONENT_REPLY_DELAY = 480;
+const SETUP_MOVE_DELAY = 420;
+
+// ── DOM references ──────────────────────────────────────────────────────────
+
+const boardArea = document.getElementById("boardArea");
+const statusEl = document.getElementById("pzStatus");
+const statusTitleEl = document.getElementById("pzStatusTitle");
+const statusSubEl = document.getElementById("pzStatusSub");
+const ratingEl = document.getElementById("pzRating");
+const themesEl = document.getElementById("pzThemes");
+const totalCountEl = document.getElementById("pzTotalCount");
+const minRatingInput = document.getElementById("pzMinRating");
+const maxRatingInput = document.getElementById("pzMaxRating");
+const presetsEl = document.getElementById("pzPresets");
+const nextBtn = document.getElementById("pzNextBtn");
+const hintBtn = document.getElementById("pzHintBtn");
+const retryBtn = document.getElementById("pzRetryBtn");
+const solverNameEl = document.getElementById("pzSolverName");
+const opponentNameEl = document.getElementById("pzOpponentName");
+const solverPfpEl = document.getElementById("pzSolverPfp");
+const opponentPfpEl = document.getElementById("pzOpponentPfp");
+const solvedCountEl = document.getElementById("pzSolvedCount");
+const attemptCountEl = document.getElementById("pzAttemptCount");
+const streakCountEl = document.getElementById("pzStreakCount");
+
+// ── Rendering ───────────────────────────────────────────────────────────────
+
+// Mirrors Training's renderBoard: repaint from the current FEN, re-apply the
+// last-move highlight, and glide the moved piece unless the caller already
+// showed the movement (drag) or the board is flipped (the clones would render
+// mirrored).
+function renderBoard(suppressGlide) {
+  const boardEl = document.querySelector(".board");
+  const before = snapshotBoard();
+
+  chess.load(currentNode.fen);
+  clearBoard();
+
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+  chess.board().forEach((row, rowIndex) => {
+    row.forEach((piece, colIndex) => {
+      if (!piece) return;
+      const square = document.getElementById(files[colIndex] + (8 - rowIndex));
+      const img = document.createElement("img");
+      img.classList.add("piece");
+      img.src = getPieceImage(piece.color, piece.type);
+      square.appendChild(img);
+    });
+  });
+
+  applyLastMoveHighlight();
+  if (chess.in_check()) {
+    flashCheck(findKingSquare(chess, chess.turn()));
+  }
+
+  if (suppressGlide || boardFlipped || !currentNode.move) return;
+
+  const move = currentNode.move;
+  const fromData = before[move.from];
+  if (!fromData) return;
+
+  const toSquareEl = document.getElementById(move.to);
+  if (!toSquareEl) return;
+
+  const boardRect = boardEl.getBoundingClientRect();
+  const toRect = toSquareEl.getBoundingClientRect();
+
+  if (before[move.to]) {
+    const cap = document.createElement("img");
+    cap.src = before[move.to].src;
+    cap.className = "piece anim-capture";
+    cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
+      width:${before[move.to].rect.width}px;height:${before[move.to].rect.height}px;
+      left:${before[move.to].rect.left - boardRect.left}px;
+      top:${before[move.to].rect.top - boardRect.top}px;`;
+    boardEl.appendChild(cap);
+    requestAnimationFrame(() => {
+      cap.style.transition = "opacity 150ms ease";
+      cap.style.opacity = "0";
+      cap.addEventListener("transitionend", () => cap.remove(), { once: true });
+    });
+  }
+
+  const toEl = toSquareEl.querySelector(".piece");
+  if (toEl) toEl.style.opacity = "0";
+
+  const fly = document.createElement("img");
+  fly.src = fromData.src;
+  fly.className = "piece anim-fly";
+  const sl = fromData.rect.left - boardRect.left;
+  const st = fromData.rect.top - boardRect.top;
+  const el = toRect.left - boardRect.left;
+  const et = toRect.top - boardRect.top;
+  fly.style.cssText = `position:absolute;pointer-events:none;z-index:20;
+    width:${fromData.rect.width}px;height:${fromData.rect.height}px;
+    left:${sl}px;top:${st}px;will-change:transform;
+    transition:transform 200ms cubic-bezier(0.25,0.1,0.25,1);transform:translate(0,0);`;
+  boardEl.appendChild(fly);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fly.style.transform = `translate(${el - sl}px,${et - st}px)`;
+    });
+  });
+
+  fly.addEventListener(
+    "transitionend",
+    () => {
+      fly.remove();
+      if (toEl) toEl.style.opacity = "1";
+    },
+    { once: true },
+  );
+}
+
+// Puzzle-specific square feedback. board-core's clearBoardHighlights only
+// knows about last-move/check-flash, so these classes are managed here.
+function clearPuzzleMarks() {
+  squares.forEach((sq) =>
+    sq.classList.remove("wrong-move", "right-move", "hint-square"),
+  );
+}
+
+function flashSquares(squareIds, className) {
+  squareIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove(className);
+    void el.offsetWidth; // force reflow so a repeat flash re-triggers
+    el.classList.add(className);
+    el.addEventListener(
+      "animationend",
+      () => el.classList.remove(className),
+      { once: true },
+    );
+  });
+}
+
+function applyOrientation() {
+  boardArea.classList.toggle("flipped", boardFlipped);
+}
+
+// ── Status / panel updates ──────────────────────────────────────────────────
+
+const STATUS_VARIANTS = [
+  "pz-status-idle",
+  "pz-status-solving",
+  "pz-status-correct",
+  "pz-status-wrong",
+  "pz-status-solved",
+  "pz-status-clean",
+];
+
+function setStatus(variant, title, sub) {
+  STATUS_VARIANTS.forEach((v) => statusEl.classList.remove(v));
+  statusEl.classList.add(variant);
+  statusTitleEl.textContent = title;
+  statusSubEl.textContent = sub;
+}
+
+function updateSessionDisplay() {
+  solvedCountEl.textContent = String(session.solved);
+  attemptCountEl.textContent = String(session.attempted);
+  streakCountEl.textContent = String(session.streak);
+}
+
+// Themes name the tactic, so they stay hidden until the puzzle is over.
+function renderThemes(reveal) {
+  themesEl.innerHTML = "";
+  themesEl.classList.toggle("pz-themes-visible", Boolean(reveal));
+  if (!reveal || !currentPuzzle || !currentPuzzle.themes) return;
+
+  currentPuzzle.themes.forEach((theme) => {
+    const chip = document.createElement("span");
+    chip.className = "pz-theme";
+    // API themes are camelCase ("hangingPiece") — space them out for display.
+    chip.textContent = theme
+      .replace(/([a-z])([A-Z0-9])/g, "$1 $2")
+      .replace(/^./, (c) => c.toUpperCase());
+    themesEl.appendChild(chip);
+  });
+}
+
+function updatePlayerBars() {
+  const solverIsWhite = solverColor === "w";
+  solverNameEl.textContent = solverIsWhite ? "White" : "Black";
+  opponentNameEl.textContent = solverIsWhite ? "Black" : "White";
+  solverPfpEl.className = "player-pfp " + (solverIsWhite ? "white-pfp" : "black-pfp");
+  opponentPfpEl.className = "player-pfp " + (solverIsWhite ? "black-pfp" : "white-pfp");
+}
+
+function setControlsBusy(busy) {
+  nextBtn.disabled = busy;
+  hintBtn.disabled = busy || puzzleState !== PUZZLE_STATE.SOLVING;
+  retryBtn.disabled = busy || !currentPuzzle;
+}
+
+// ── Move application ────────────────────────────────────────────────────────
+
+// Convert a chess.js move object to the UCI form the API uses.
+function moveToUci(move) {
+  return move.from + move.to + (move.promotion || "");
+}
+
+// Play one move of the scripted solution (the setup move, or an opponent
+// reply). These are trusted, so no validation branch is needed beyond the
+// chess.js result.
+function applyScriptedMove(uci) {
+  chess.load(currentNode.fen);
+  const move = chess.move({
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    promotion: uci[4] || "q",
+  });
+
+  if (!move) return false;
+
+  const gaveCheck = chess.in_check();
+  currentNode = { fen: chess.fen(), move };
+  renderBoard();
+  playSound(moveSoundName(move, gaveCheck));
+  return true;
+}
+
+function playOpponentReply() {
+  const uci = solutionMoves[solutionIndex];
+  if (!uci) {
+    awaitingOpponent = false;
+    return;
+  }
+
+  applyScriptedMove(uci);
+  solutionIndex += 1;
+  awaitingOpponent = false;
+
+  setStatus(
+    "pz-status-solving",
+    "Your turn",
+    `Find the best move for ${solverColor === "w" ? "White" : "Black"}`,
+  );
+  setControlsBusy(false);
+}
+
+/* The solver's move. board-core.js's drag handler and the square-click handler
+   below both funnel into this, matching the signature Analysis and Training
+   use so the shared drag code can call it unchanged. */
+function playMove(moveInput, suppressGlide) {
+  if (puzzleState !== PUZZLE_STATE.SOLVING || awaitingOpponent) return false;
+
+  chess.load(currentNode.fen);
+  const move = chess.move(moveInput);
+
+  if (!move) {
+    // Illegal by the rules of chess — same feedback as Analysis/Training.
+    flashKingIfInCheck(currentNode.fen);
+    return false;
+  }
+
+  const played = moveToUci(move);
+  const expected = solutionMoves[solutionIndex];
+  const isMate = chess.in_checkmate();
+
+  // A different move that still delivers mate ends the puzzle just as well as
+  // the recorded one, so accept it rather than calling it wrong.
+  const correct = played === expected || isMate;
+
+  if (!correct) {
+    // Reject: the board is repainted from the unchanged position, so the piece
+    // returns to where it started.
+    renderBoard(true);
+    clearPuzzleMarks();
+    flashSquares([move.from, move.to], "wrong-move");
+
+    if (!failedThisPuzzle) {
+      failedThisPuzzle = true;
+      session.streak = 0;
+      updateSessionDisplay();
+    }
+
+    setStatus("pz-status-wrong", "Not quite", "That move loses the idea — try again");
+    return false;
+  }
+
+  const gaveCheck = chess.in_check();
+  currentNode = { fen: chess.fen(), move };
+  solutionIndex += 1;
+
+  renderBoard(suppressGlide);
+  playSound(moveSoundName(move, gaveCheck));
+  clearPuzzleMarks();
+  flashSquares([move.from, move.to], "right-move");
+  hintLevel = 0;
+
+  const solutionExhausted = solutionIndex >= solutionMoves.length;
+
+  if (isMate || solutionExhausted) {
+    onPuzzleSolved();
+    return true;
+  }
+
+  // More to go: play the opponent's forced reply, then hand back over.
+  awaitingOpponent = true;
+  setStatus("pz-status-correct", "Correct", "Keep going…");
+  setControlsBusy(true);
+  scheduleStep(playOpponentReply, OPPONENT_REPLY_DELAY);
+  return true;
+}
+
+function onPuzzleSolved() {
+  puzzleState = PUZZLE_STATE.SOLVED;
+  awaitingOpponent = false;
+
+  session.attempted += 1;
+  if (!failedThisPuzzle && !usedHint) {
+    session.solved += 1;
+    session.streak += 1;
+  } else if (!failedThisPuzzle && usedHint) {
+    // Solved, but with help — counts as solved, does not extend a clean streak.
+    session.solved += 1;
+    session.streak = 0;
+  } else {
+    session.streak = 0;
+  }
+  updateSessionDisplay();
+
+  // Green is reserved for a fully correct solve with no help. A wrong move or
+  // a hint still finishes the line, but stays yellow rather than claiming a
+  // clean solve — and a puzzle finished after a wrong move doesn't count
+  // towards Solved, so its headline must not claim it did either.
+  if (failedThisPuzzle) {
+    setStatus("pz-status-solved", "Solution complete", "A wrong move broke the solve");
+  } else if (usedHint) {
+    setStatus("pz-status-solved", "Puzzle solved", "Solved with a hint");
+  } else {
+    setStatus("pz-status-clean", "Puzzle solved", "Clean solve — nice");
+  }
+
+  renderThemes(true);
+  setControlsBusy(false); // also disables Hint, since the state is no longer SOLVING
+}
+
+// ── Loading puzzles ─────────────────────────────────────────────────────────
+
+function readRatingRange() {
+  let min = parseInt(minRatingInput.value, 10);
+  let max = parseInt(maxRatingInput.value, 10);
+
+  if (!Number.isFinite(min)) min = 400;
+  if (!Number.isFinite(max)) max = 2800;
+
+  min = Math.min(Math.max(min, 0), 3500);
+  max = Math.min(Math.max(max, 0), 3500);
+  if (min > max) [min, max] = [max, min];
+
+  minRatingInput.value = String(min);
+  maxRatingInput.value = String(max);
+  return { min, max };
+}
+
+function setupPuzzle(puzzle) {
+  cancelPendingSteps();
+  clearPuzzleMarks();
+  clearValidMoves();
+  clearBoardHighlights();
+
+  if (selectedSquare) {
+    selectedSquare.style.outline = "none";
+    selectedSquare = null;
+  }
+
+  currentPuzzle = puzzle;
+  solutionMoves = puzzle.moves;
+  solutionIndex = 0;
+  usedHint = false;
+  failedThisPuzzle = false;
+  hintLevel = 0;
+  awaitingOpponent = true; // the setup move is still to come
+
+  chess.load(puzzle.fen);
+
+  // The FEN's side to move plays the setup move, so the solver is the other
+  // side. Orientation is set before the first paint to avoid a visible flip.
+  solverColor = chess.turn() === "w" ? "b" : "w";
+  boardFlipped = solverColor === "b";
+  applyOrientation();
+  updatePlayerBars();
+
+  currentNode = { fen: puzzle.fen, move: null };
+  renderBoard(true);
+
+  ratingEl.textContent = String(puzzle.rating);
+  renderThemes(false);
+
+  puzzleState = PUZZLE_STATE.SOLVING;
+  setStatus("pz-status-idle", "Watch the move", "Your opponent is playing…");
+  setControlsBusy(true);
+
+  scheduleStep(() => {
+    applyScriptedMove(solutionMoves[0]);
+    solutionIndex = 1;
+    awaitingOpponent = false;
+    setStatus(
+      "pz-status-solving",
+      "Your turn",
+      `Find the best move for ${solverColor === "w" ? "White" : "Black"}`,
+    );
+    setControlsBusy(false);
+  }, SETUP_MOVE_DELAY);
+}
+
+async function loadNewPuzzle() {
+  cancelPendingSteps();
+  puzzleState = PUZZLE_STATE.LOADING;
+  awaitingOpponent = false;
+  setControlsBusy(true);
+  setStatus("pz-status-idle", "Loading…", "Fetching a puzzle");
+
+  const { min, max } = readRatingRange();
+
+  try {
+    const puzzle = await fetchRandomPuzzle(min, max);
+    setupPuzzle(puzzle);
+  } catch (err) {
+    puzzleState = PUZZLE_STATE.ERROR;
+    currentPuzzle = null;
+    setControlsBusy(false);
+    retryBtn.disabled = true;
+    hintBtn.disabled = true;
+
+    if (err.code === "no_puzzles_in_range") {
+      setStatus("pz-status-wrong", "No puzzles found", "Try a wider rating range");
+    } else if (err.code === "network_error") {
+      setStatus("pz-status-wrong", "Server unreachable", "Is the Cheese API running?");
+    } else {
+      setStatus("pz-status-wrong", "Could not load a puzzle", "Please try again");
+    }
+  }
+}
+
+function retryPuzzle() {
+  if (!currentPuzzle) return;
+  setupPuzzle(currentPuzzle);
+}
+
+// ── Hint ────────────────────────────────────────────────────────────────────
+
+/* Reveals the recorded solution rather than asking Stockfish. On a
+   non-forced continuation the engine's preference can differ from the puzzle's
+   line, which would point the solver at a move the puzzle then rejects.
+   First press names the piece; second press shows the destination. */
+function showHint() {
+  if (puzzleState !== PUZZLE_STATE.SOLVING || awaitingOpponent) return;
+
+  const uci = solutionMoves[solutionIndex];
+  if (!uci) return;
+
+  usedHint = true;
+  hintLevel = Math.min(hintLevel + 1, 2);
+  clearPuzzleMarks();
+
+  const from = uci.slice(0, 2);
+  const to = uci.slice(2, 4);
+
+  const fromEl = document.getElementById(from);
+  if (fromEl) fromEl.classList.add("hint-square");
+
+  if (hintLevel >= 2) {
+    const toEl = document.getElementById(to);
+    if (toEl) toEl.classList.add("hint-square");
+    setStatus("pz-status-solving", "Hint", `Play ${from} → ${to}`);
+  } else {
+    chess.load(currentNode.fen);
+    const piece = chess.get(from);
+    const names = {
+      p: "pawn",
+      n: "knight",
+      b: "bishop",
+      r: "rook",
+      q: "queen",
+      k: "king",
+    };
+    const label = piece ? names[piece.type] : "piece";
+    setStatus("pz-status-solving", "Hint", `Move the ${label} on ${from}`);
+  }
+}
+
+// ── Interaction: click to move ──────────────────────────────────────────────
+
+function canInteract() {
+  return puzzleState === PUZZLE_STATE.SOLVING && !awaitingOpponent;
+}
+
+squares.forEach((square) => {
+  square.addEventListener("click", () => {
+    if (!canInteract()) return;
+
+    chess.load(currentNode.fen);
+    if (chess.turn() !== solverColor) return;
+
+    if (!selectedSquare) {
+      const piece = square.querySelector(".piece");
+      if (!piece) return;
+
+      const pieceColor = piece.src.includes("/w_") ? "w" : "b";
+      if (pieceColor !== chess.turn()) return;
+
+      selectedSquare = square;
+      square.style.outline = "3px solid rgba(255,255,255,0.4)";
+      showValidMoves(square.id);
+      return;
+    }
+
+    // Clicking the selected square again deselects it.
+    if (square === selectedSquare) {
+      clearValidMoves();
+      selectedSquare.style.outline = "none";
+      selectedSquare = null;
+      return;
+    }
+
+    // Clicking another of your own pieces re-selects instead of moving.
+    const targetPiece = square.querySelector(".piece");
+    if (targetPiece) {
+      const targetColor = targetPiece.src.includes("/w_") ? "w" : "b";
+      if (targetColor === chess.turn()) {
+        clearValidMoves();
+        selectedSquare.style.outline = "none";
+        selectedSquare = square;
+        square.style.outline = "3px solid rgba(255,255,255,0.4)";
+        showValidMoves(square.id);
+        return;
+      }
+    }
+
+    const from = selectedSquare.id;
+    const to = square.id;
+
+    clearValidMoves();
+    selectedSquare.style.outline = "none";
+    selectedSquare = null;
+
+    if (isPromotionMove(from, to) && isLegalMove(from, to)) {
+      showPromotionPicker(from, to);
+    } else {
+      playMove({ from, to });
+    }
+  });
+});
+
+// ── Interaction: promotion picker ───────────────────────────────────────────
+// Same construction as Training's: positioned in viewport coordinates and
+// attached to <body>, so it is never rotated along with a flipped board.
+
+function showPromotionPicker(from, to) {
+  pendingPromotion = { from, to };
+  chess.load(currentNode.fen);
+
+  const piece = chess.get(from);
+  const isWhite = piece.color === "w";
+  const pieces = ["q", "r", "b", "n"];
+  const orderedPieces = isWhite ? pieces : [...pieces].reverse();
+
+  const toSquareEl = document.getElementById(to);
+  const squareRect = toSquareEl.getBoundingClientRect();
+  const squareSize = squareRect.width;
+
+  const popup = document.createElement("div");
+  popup.id = "promotion-popup";
+  popup.className = "promotion-popup";
+
+  orderedPieces.forEach((p) => {
+    const btn = document.createElement("div");
+    btn.className = "promotion-piece";
+    const img = document.createElement("img");
+    img.src = getPieceImage(isWhite ? "w" : "b", p);
+    img.className = "piece";
+    img.style.width = "80%";
+    img.style.height = "80%";
+    btn.appendChild(img);
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closePromotionPicker();
+      const promo = pendingPromotion;
+      pendingPromotion = null;
+      if (promo) playMove({ from: promo.from, to: promo.to, promotion: p });
+    });
+    popup.appendChild(btn);
+  });
+
+  popup.style.position = "fixed";
+  let pxTop = squareRect.top;
+  if (pxTop + squareSize * 4 > window.innerHeight) {
+    pxTop = squareRect.bottom - squareSize * 4;
+  }
+  popup.style.left =
+    Math.max(8, Math.min(squareRect.left, window.innerWidth - squareSize - 8)) + "px";
+  popup.style.top = Math.max(8, pxTop) + "px";
+  popup.style.width = squareSize + "px";
+
+  document.body.appendChild(popup);
+  setTimeout(() => document.addEventListener("click", outsidePromotionClick), 0);
+}
+
+// ── Interaction: drag and drop ──────────────────────────────────────────────
+// onDragMove / onDragEnd live in board-core.js and call back into
+// getDragTargetSquare, isLegalMove, isPromotionMove and playMove.
+
+function getDragTargetSquare(clientX, clientY) {
+  const boardEl = document.querySelector(".board");
+  const boardRect = boardEl.getBoundingClientRect();
+  const squareSize = boardRect.width / 8;
+  const col = Math.floor((clientX - boardRect.left) / squareSize);
+  const row = Math.floor((clientY - boardRect.top) / squareSize);
+  if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  if (boardFlipped) return files[7 - col] + (row + 1);
+  return files[col] + (8 - row);
+}
+
+function startDrag(e, square) {
+  const pieceEl = square.querySelector(".piece");
+  if (!pieceEl) return;
+  if (!canInteract()) return;
+
+  chess.load(currentNode.fen);
+  if (chess.turn() !== solverColor) return;
+
+  const pieceColor = pieceEl.src.includes("/w_") ? "w" : "b";
+  if (pieceColor !== chess.turn()) return;
+
+  e.preventDefault();
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const boardEl = document.querySelector(".board");
+  const squareSize = boardEl.getBoundingClientRect().width / 8;
+
+  const ghost = document.createElement("img");
+  ghost.src = pieceEl.src;
+  ghost.className = "piece drag-ghost";
+  ghost.style.cssText = `
+    position:fixed;pointer-events:none;z-index:1000;
+    left:0;top:0;
+    width:${squareSize}px;height:${squareSize}px;
+    will-change:transform;
+  `;
+  setGhostTransform(ghost, clientX, clientY, DRAG_GHOST_SCALE);
+  document.body.appendChild(ghost);
+
+  pieceEl.style.opacity = "0.25";
+  square.style.outline = "3px solid rgba(255,255,255,0.4)";
+  showValidMoves(square.id);
+
+  if (selectedSquare && selectedSquare !== square) {
+    selectedSquare.style.outline = "none";
+    selectedSquare = null;
+  }
+
+  dragState = {
+    pieceEl,
+    ghost,
+    fromSquare: square,
+    fromRect: square.getBoundingClientRect(),
+  };
+}
+
+const boardElForDrag = document.querySelector(".board");
+
+boardElForDrag.addEventListener("mousedown", (e) => {
+  const square = e.target.closest(".square");
+  if (square) startDrag(e, square);
+});
+
+boardElForDrag.addEventListener(
+  "touchstart",
+  (e) => {
+    const square = e.target.closest(".square");
+    if (square) startDrag(e, square);
+  },
+  { passive: false },
+);
+
+document.addEventListener("mousemove", onDragMove, { passive: true });
+document.addEventListener("touchmove", onDragMove, { passive: true });
+document.addEventListener("mouseup", onDragEnd);
+document.addEventListener("touchend", onDragEnd);
+
+// ── Controls ────────────────────────────────────────────────────────────────
+
+nextBtn.addEventListener("click", loadNewPuzzle);
+retryBtn.addEventListener("click", retryPuzzle);
+hintBtn.addEventListener("click", showHint);
+
+presetsEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".pz-preset");
+  if (!btn) return;
+
+  presetsEl
+    .querySelectorAll(".pz-preset")
+    .forEach((b) => b.classList.remove("pz-preset-active"));
+  btn.classList.add("pz-preset-active");
+
+  minRatingInput.value = btn.dataset.min;
+  maxRatingInput.value = btn.dataset.max;
+  loadNewPuzzle();
+});
+
+// Typing a custom range clears the preset selection — the buttons no longer
+// describe what is in the inputs.
+[minRatingInput, maxRatingInput].forEach((input) => {
+  input.addEventListener("change", () => {
+    readRatingRange();
+    presetsEl
+      .querySelectorAll(".pz-preset")
+      .forEach((b) => b.classList.remove("pz-preset-active"));
+  });
+});
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+
+updateSessionDisplay();
+
+fetchPuzzleStats()
+  .then((stats) => {
+    totalCountEl.textContent = `${stats.count.toLocaleString()} puzzles`;
+  })
+  .catch(() => {
+    totalCountEl.textContent = "";
+  });
+
+loadNewPuzzle();

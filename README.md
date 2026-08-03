@@ -8,19 +8,20 @@
 
 ## Overview
 
-**Cheese** is an all-in-one, desktop-focused chess study platform that runs entirely in the browser. It brings together everything you need to improve your game in one calm, cohesive workspace — analyse your games with a world-class engine, study openings, browse the greatest games ever played, and sharpen your skills against Stockfish.
+**Cheese** is an all-in-one, desktop-focused chess study platform. It brings together everything you need to improve your game in one calm, cohesive workspace — analyse your games with a world-class engine, study openings, browse the greatest games ever played, train tactics, and sharpen your skills against Stockfish.
 
-There is no account to create and no server to configure. Cheese is a fast, fully client-side application: open it and start studying.
+There is no account to create. The website itself is fully static and every board feature — analysis, openings, the database, playing Stockfish — runs entirely in your browser. The Puzzles page additionally talks to the Cheese API, a small backend that serves positions from a database of 5.8 million tactics puzzles (see [`server/`](server/)).
 
 ---
 
 ## Features
 
-Everything below is available in **Version 1.2**.
+Everything below is available in **Version 1.3**.
 
 | Feature | Description |
 | --- | --- |
 | **Stockfish 18 Analysis** | Analyse any position with the Stockfish 18 engine, including an evaluation bar and engine lines. |
+| **Puzzle Trainer** | Train tactics against a database of 5.8 million puzzles, filtered by difficulty, with hints and session tracking. |
 | **Opening Explorer** | Browse openings by ECO code and hand off any line straight into Analysis. |
 | **Play Against Stockfish** | Play full games versus the engine — choose your colour, with automatic board orientation and turn enforcement. |
 | **Master Game Database** | Explore curated collections of games from legendary players, parsed dynamically from PGN. |
@@ -28,15 +29,31 @@ Everything below is available in **Version 1.2**.
 | **PGN Import** | Load games via PGN and review them move by move. |
 | **Move Navigation** | Step forwards and backwards through any game with a clean move list. |
 | **Modern Glassmorphism UI** | A consistent dark, glassmorphism-inspired interface across every page. |
-| **Fast Client-Side Application** | No backend, no build step — everything runs instantly in the browser. |
+| **No Build Step** | The website is plain HTML, CSS and JavaScript — no bundler, no framework. |
+
+---
+
+## Project Structure
+
+| Path | Contents |
+| --- | --- |
+| `index.html`, `pages/` | The static website — one folder per page |
+| `assets/` | Shared CSS, JS, pieces, sounds and images |
+| `engine/` | Stockfish 18 (WebAssembly) |
+| `data/` | Static data: ECO openings, master game PGNs |
+| `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
+
+The website and the API deploy independently. Only the Puzzles page depends on
+the API; every other page works without it.
 
 ---
 
 ## Upcoming Features
 
-These are planned for future releases and are **not** part of Version 1.2:
+These are planned for future releases:
 
-- **Puzzle System** — tactical training with curated positions
+- **User accounts** — cloud-synced progress and saved analyses
+- **Puzzle themes** — filter training by tactical motif
 - **Mobile Support** — a fully responsive experience for phones and tablets
 - **More master games** — additional players and expanded collections
 - **Additional improvements** — ongoing polish and quality-of-life updates
@@ -75,6 +92,8 @@ _Screenshots will be added here._
 | **chess.js** | Move generation, legality, and game state |
 | **Stockfish 18** | Chess engine (WebAssembly, runs in a Web Worker) |
 | **PGN parsing** | Reading and splitting master games and imports |
+| **Node.js + Express** | Backend API (Puzzles only) |
+| **SQLite** | Puzzle datastore (5.8M rows) |
 
 ---
 
@@ -86,7 +105,7 @@ Cheese is built to be a **calm, distraction-free environment for studying chess*
 
 ## Version
 
-This README corresponds to **Version 1.2**.
+This README corresponds to **Version 1.3**.
 
 ---
 

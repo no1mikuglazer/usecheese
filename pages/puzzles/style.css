@@ -1,4 +1,8 @@
-/* Cheese — Puzzles page */
+/* Cheese — Puzzles page
+   Nav styling comes from assets/css/nav.css and the board/sidebar geometry
+   from assets/css/board-layout.css; this file only adds what is specific to
+   the puzzle trainer. */
+
 * {
     margin: 0;
     padding: 0;
@@ -8,13 +12,10 @@
 /* =====================
    BODY
    ===================== */
-/* Same background implementation as the Analysis page:
-   custom_bg1.png, cover sizing, centred, no-repeat — so the page matches
-   the rest of Cheese visually. */
 
 body {
     height: 100vh;
-    overflow: auto;
+    overflow: hidden;
     background-image: url("../../assets/backgrounds/custom_bg1.png");
     background-size: cover;
     background-position: center;
@@ -24,266 +25,522 @@ body {
     color: white;
 }
 
+/* Offset the whole app past the fixed 220px nav. */
+.app-container {
+    padding-left: 220px;
+}
+
 /* =====================
-   LEFT NAVIGATION SIDEBAR
+   BOARD (shared visual language with Analysis / Training)
    ===================== */
 
-.left-nav {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 220px;
-    height: 100vh;
-    background: rgba(12, 16, 28, 0.72);
-    backdrop-filter: blur(28px) saturate(135%);
-    -webkit-backdrop-filter: blur(28px) saturate(135%);
-    border-right: 1px solid rgba(255, 255, 255, 0.10);
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
-    box-shadow: 6px 0 34px rgba(0, 0, 0, 0.45),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05),
-                inset -1px 0 0 rgba(255, 255, 255, 0.04);
-    padding: 0 0 24px 0;
-}
-
-/* LOGO */
-
-a.left-nav-logo,
-a.left-nav-item {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-}
-
-a.left-nav-logo {
-    cursor: pointer;
-}
-
-a.left-nav-logo:hover {
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* Navigable (non-active, non-disabled) nav item — clickable link.
-   Explicit white text so the link never falls back to the inherited body
-   colour. The active item is highlighted via its own active rule. */
-a.left-nav-item-link {
-    cursor: pointer;
-    width: 100%;
-    color: white;
-}
-
-a.left-nav-item-link:hover {
-    background: rgba(255, 255, 255, 0.07);
-    color: white;
-    transform: translateX(3px);
-}
-
-.left-nav-logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 26px 20px 22px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-    margin-bottom: 16px;
-}
-
-.left-nav-logo-icon {
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-}
-
-.left-nav-logo-text {
-    font-size: 22px;
-    font-weight: 800;
-    color: white;
-    letter-spacing: 0.5px;
-    font-family: Arial, sans-serif;
-}
-
-/* NAV LIST */
-
-.left-nav-items {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 0 12px;
-    flex: 1;
-}
-
-/* NAV ITEM */
-
-.left-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 15px;
-    font-weight: 500;
-    font-family: Arial, sans-serif;
-    cursor: default;
-    transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+.square {
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.15s;
+}
+
+.light {
+    background-image: url("../../assets/board/square_brown_light_svg.svg");
+    background-size: cover;
+}
+
+.dark {
+    background-image: url("../../assets/board/square_brown_dark_svg.svg");
+    background-size: cover;
+}
+
+.piece {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
     user-select: none;
-}
-
-/* ACTIVE */
-
-.left-nav-active {
-    background: rgba(255, 255, 255, 0.10);
-    color: white;
-    cursor: default;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
-}
-
-/* ACTIVE accent bar */
-
-.left-nav-active::before {
-    content: "";
-    position: absolute;
-    left: -12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 60%;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 0 3px 3px 0;
-}
-
-/* DISABLED */
-
-.left-nav-disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.left-nav-disabled:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.65);
-    transform: translateX(3px);
-    opacity: 0.65;
-}
-
-/* COMING SOON tooltip */
-
-.left-nav-disabled::after {
-    content: attr(data-soon);
-    position: absolute;
-    left: calc(100% + 12px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-    background: rgba(20, 26, 45, 0.96);
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 7px;
-    white-space: nowrap;
     pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 200;
+    transition: 0.15s;
 }
 
-.left-nav-disabled:hover::after {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
+.square:hover {
+    filter: brightness(1.05);
+    cursor: pointer;
 }
 
-/* ICON */
+.square:hover .piece {
+    transform: scale(1.05);
+}
 
-.left-nav-icon {
-    width: 18px;
-    height: 18px;
+.square:has(.piece) { cursor: grab; }
+.square:has(.piece):active { cursor: grabbing; }
+
+/* VALID MOVE DOTS */
+
+.valid-move::after {
+    content: "";
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    position: absolute;
+}
+
+/* LAST MOVE HIGHLIGHT */
+
+.square.last-move {
+    box-shadow: inset 0 0 0 9999px rgba(255, 213, 79, 0.28);
+}
+
+/* CHECK FLASH */
+
+.square.check-flash {
+    animation: checkFlash 0.85s ease-in-out 1;
+}
+
+@keyframes checkFlash {
+    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0); }
+    25%, 75% { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0.55); }
+    50%      { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0); }
+}
+
+/* WRONG MOVE FLASH — puzzle-specific.
+   Same visual grammar as the check flash (a brief inset tint) but red-orange
+   and only once, so a wrong-but-legal move reads as "rejected" rather than
+   "illegal". */
+
+.square.wrong-move {
+    animation: wrongMove 0.5s ease-in-out 1;
+}
+
+@keyframes wrongMove {
+    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(232, 80, 62, 0); }
+    45%      { box-shadow: inset 0 0 0 9999px rgba(232, 80, 62, 0.6); }
+}
+
+/* CORRECT MOVE FLASH */
+
+.square.right-move {
+    animation: rightMove 0.5s ease-in-out 1;
+}
+
+@keyframes rightMove {
+    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(88, 200, 120, 0); }
+    45%      { box-shadow: inset 0 0 0 9999px rgba(88, 200, 120, 0.55); }
+}
+
+/* HINT HIGHLIGHT — persists until the move is played, unlike the flashes. */
+
+.square.hint-square {
+    box-shadow: inset 0 0 0 9999px rgba(96, 165, 250, 0.4);
+}
+
+/* BOARD FLIP (solver plays Black)
+   Only the board rotates. Training also reverses the column because its bars
+   are labelled by colour; here they are labelled "You" / "Opponent", so the
+   solver must stay on the near side in both orientations. */
+
+.board-area.flipped .board { transform: rotate(180deg); }
+.board-area.flipped .board .piece { transform: rotate(180deg); }
+
+/* Keep the hover-scale from cancelling the flip rotation on a flipped board. */
+.board-area.flipped .square:hover .piece { transform: rotate(180deg) scale(1.05); }
+
+/* DRAG / MOVE ANIMATION HELPERS */
+
+.anim-fly,
+.anim-capture {
+    width: 85%;
+    height: 85%;
+    object-fit: contain;
+}
+
+.drag-ghost {
+    width: auto;
+    height: auto;
+    opacity: 0.95;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+}
+
+/* PROMOTION PICKER */
+
+.promotion-popup {
+    position: fixed;
+    z-index: 1200;
+    background: rgba(16, 21, 36, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.promotion-piece {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.promotion-piece:hover { background: rgba(255, 255, 255, 0.14); transform: scale(1.06); }
+.promotion-piece + .promotion-piece { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+
+/* =====================
+   SIDEBAR PANEL
+   ===================== */
+
+.pz-panel {
+    width: 100%;
+    height: 100%;
+    background: rgba(12, 16, 28, 0.78);
+    backdrop-filter: blur(26px) saturate(130%);
+    -webkit-backdrop-filter: blur(26px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.42);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.4vh, 18px);
+    padding: clamp(16px, 2vh, 24px);
+    overflow-y: auto;
+}
+
+/* HEADER */
+
+.pz-panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: clamp(8px, 1.2vh, 14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pz-panel-title {
+    font-size: clamp(20px, 1.7vw, 28px);
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    color: #eef1f8;
+}
+
+.pz-panel-count {
+    font-size: clamp(11px, 0.85vw, 13px);
+    color: rgba(233, 238, 246, 0.45);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* STATUS BANNER */
+
+.pz-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: clamp(10px, 1.4vh, 15px) 14px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.pz-status-icon {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
     flex-shrink: 0;
-    opacity: 0.85;
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
 }
 
-/* ACTIVE — pure white text + icon (inactive items unchanged) */
-/* Specificity (0,2,0) to override `a.left-nav-item { color: inherit }` (0,1,1).
-   The icon uses stroke="currentColor", so pure-white text makes it white too. */
+.pz-status-text { min-width: 0; }
 
-.left-nav-item.left-nav-active {
+.pz-status-title {
+    font-size: clamp(13px, 1vw, 16px);
+    font-weight: 700;
+    color: #f2f5fb;
+    letter-spacing: 0.2px;
+}
+
+.pz-status-sub {
+    font-size: clamp(11px, 0.82vw, 13px);
+    color: rgba(233, 238, 246, 0.62);
+    margin-top: 2px;
+}
+
+/* Status variants */
+
+.pz-status-solving  { background: rgba(96, 165, 250, 0.10); border-color: rgba(96, 165, 250, 0.32); }
+.pz-status-solving  .pz-status-icon { background: #60a5fa; box-shadow: 0 0 12px rgba(96, 165, 250, 0.7); }
+
+.pz-status-correct  { background: rgba(88, 200, 120, 0.12); border-color: rgba(88, 200, 120, 0.34); }
+.pz-status-correct  .pz-status-icon { background: #58c878; box-shadow: 0 0 12px rgba(88, 200, 120, 0.7); }
+
+.pz-status-wrong    { background: rgba(232, 80, 62, 0.12); border-color: rgba(232, 80, 62, 0.34); }
+.pz-status-wrong    .pz-status-icon { background: #e8503e; box-shadow: 0 0 12px rgba(232, 80, 62, 0.7); }
+
+/* Solved with a wrong move along the way, or with a hint used — yellow. */
+.pz-status-solved   { background: rgba(255, 205, 92, 0.13); border-color: rgba(255, 205, 92, 0.36); }
+.pz-status-solved   .pz-status-icon { background: #ffcd5c; box-shadow: 0 0 14px rgba(255, 205, 92, 0.75); }
+
+/* Solved cleanly, no wrong moves or hints — green. */
+.pz-status-clean    { background: rgba(88, 200, 120, 0.14); border-color: rgba(88, 200, 120, 0.4); }
+.pz-status-clean    .pz-status-icon { background: #58c878; box-shadow: 0 0 14px rgba(88, 200, 120, 0.75); }
+
+/* META */
+
+.pz-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pz-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: clamp(12px, 0.9vw, 14px);
+}
+
+.pz-meta-label {
+    color: rgba(233, 238, 246, 0.5);
+    letter-spacing: 0.3px;
+}
+
+.pz-meta-value {
+    color: #eef1f8;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.pz-themes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 2px;
+    /* Themes are a solution spoiler, so they stay hidden until the puzzle is
+       finished — revealed by adding .pz-themes-visible. */
+    display: none;
+}
+
+.pz-themes.pz-themes-visible { display: flex; }
+
+.pz-theme {
+    font-size: clamp(10px, 0.72vw, 12px);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: rgba(233, 238, 246, 0.78);
+    white-space: nowrap;
+}
+
+/* SECTIONS */
+
+.pz-section {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.pz-section-label {
+    font-size: clamp(10px, 0.75vw, 12px);
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: rgba(233, 238, 246, 0.4);
+}
+
+/* DIFFICULTY PRESETS */
+
+.pz-presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.pz-preset {
+    font-family: inherit;
+    font-size: clamp(11px, 0.8vw, 13px);
+    font-weight: 600;
+    padding: 8px 4px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(233, 238, 246, 0.7);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+
+.pz-preset:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.pz-preset-active {
+    background: rgba(96, 165, 250, 0.18);
+    border-color: rgba(96, 165, 250, 0.42);
     color: #fff;
 }
 
-.left-nav-item.left-nav-active .left-nav-icon {
-    opacity: 1;
+/* CUSTOM RANGE */
+
+.pz-range {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
 }
 
-/* =====================
-   MAIN CONTENT
-   ===================== */
-/* Blank content area, offset past the fixed 220px sidebar — ready for the
-   puzzle UI to be built here later. */
+.pz-range-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
 
-.puzzles-main {
-    margin-left: 220px;
-    min-height: 100vh;
-    padding: 60px 48px;
+.pz-range-field span {
+    font-size: clamp(10px, 0.72vw, 11px);
+    color: rgba(233, 238, 246, 0.42);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.pz-range-field input {
+    font-family: inherit;
+    font-size: clamp(12px, 0.9vw, 14px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.28);
+    color: #eef1f8;
+    outline: none;
+    transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.pz-range-field input:focus {
+    border-color: rgba(96, 165, 250, 0.55);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.pz-range-dash {
+    color: rgba(233, 238, 246, 0.35);
+    padding-bottom: 9px;
+}
+
+/* ACTIONS */
+
+.pz-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.pz-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.pz-btn {
+    font-family: inherit;
+    font-size: clamp(12px, 0.92vw, 15px);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: clamp(9px, 1.3vh, 13px) 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #eef1f8;
+    cursor: pointer;
+    transition: background 0.16s ease, transform 0.12s ease, border-color 0.16s ease, opacity 0.16s ease;
+}
+
+.pz-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.pz-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pz-btn-primary {
+    background: rgba(96, 165, 250, 0.22);
+    border-color: rgba(96, 165, 250, 0.45);
+}
+
+.pz-btn-primary:hover:not(:disabled) {
+    background: rgba(96, 165, 250, 0.32);
+}
+
+.pz-btn-wide { width: 100%; }
+
+/* SESSION STATS */
+
+.pz-session {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-top: clamp(10px, 1.4vh, 15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pz-session-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    text-align: center;
+    gap: 2px;
 }
 
-/* HERO */
-
-.pz-hero {
-    position: relative;
-    max-width: 640px;
-    animation: pzRise 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-/* Soft dark radial "spotlight" behind the hero text only — fades to fully
-   transparent at the edges so the background image stays visible (no box). */
-.pz-hero::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 155%;
-    height: 240%;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(ellipse at center,
-        rgba(6, 9, 16, 0.58) 0%,
-        rgba(6, 9, 16, 0.42) 34%,
-        rgba(6, 9, 16, 0.18) 58%,
-        rgba(6, 9, 16, 0.00) 78%);
-    filter: blur(22px);
-}
-.pz-title {
-    font-size: clamp(46px, 6vw, 66px);
+.pz-session-value {
+    font-size: clamp(17px, 1.4vw, 23px);
     font-weight: 800;
-    letter-spacing: 0.5px;
     color: #eef1f8;
-    margin: 0;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-}
-.pz-subtitle {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: rgba(244, 247, 253, 0.5);
-    margin: 12px 0 24px;
-}
-.pz-message {
-    font-size: 15.5px;
-    line-height: 1.75;
-    color: rgba(233, 238, 246, 0.82);
-    margin: 0 auto;
-    max-width: 560px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
 }
 
-@keyframes pzRise {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
+.pz-session-label {
+    font-size: clamp(9px, 0.7vw, 11px);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(233, 238, 246, 0.42);
+}
+
+/* =====================
+   TOAST (shared with board-core.js showToast)
+   ===================== */
+
+.ap-toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(16, 21, 36, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #eef1f8;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 1400;
+}
+
+.ap-toast-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }

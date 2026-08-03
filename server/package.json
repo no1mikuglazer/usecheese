@@ -1,0 +1,25 @@
+{
+  "name": "cheese-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cheese backend API — serves puzzle data from SQLite. Structured to host future features (accounts, cloud saves) without re-architecting.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "import:puzzles": "node scripts/import-puzzles.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "hyparquet": "^1.10.0",
+    "zod": "^3.24.1"
+  }
+}
