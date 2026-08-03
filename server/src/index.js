@@ -5,11 +5,40 @@ import { createApp } from "./app.js";
 import { getDb, closeDb } from "./db/connection.js";
 import { getPuzzleCount } from "./modules/puzzles/puzzles.service.js";
 
-function start() {
+const DB_WAIT_ATTEMPTS = 15;
+const DB_WAIT_DELAY_MS = 400;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// On some hosts the volume holding the database is bind-mounted into the
+// container slightly after the app process starts, so the very first check
+// can race a mount that is still in progress (observed on Railway: the app's
+// own startup can run before its "Mounting volume on: ..." log line). Retry
+// briefly before treating a missing file as fatal, rather than failing on
+// what is often just a one-second timing gap.
+async function openDatabaseWithRetry() {
+  let lastError;
+  for (let attempt = 1; attempt <= DB_WAIT_ATTEMPTS; attempt += 1) {
+    try {
+      return getDb();
+    } catch (err) {
+      lastError = err;
+      if (attempt < DB_WAIT_ATTEMPTS) {
+        console.log(`[db] not ready yet (attempt ${attempt}/${DB_WAIT_ATTEMPTS}), retrying...`);
+        await sleep(DB_WAIT_DELAY_MS);
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function start() {
   // Open the database up front so a missing/broken file fails loudly at boot
   // rather than on the first request.
   try {
-    getDb();
+    await openDatabaseWithRetry();
     console.log(`[db] ${config.dbPath} (${getPuzzleCount().toLocaleString()} puzzles)`);
   } catch (err) {
     console.error(`[db] failed to open database: ${err.message}`);
