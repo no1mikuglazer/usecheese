@@ -16,8 +16,10 @@ export function getDb() {
   if (db) return db;
 
   if (!fs.existsSync(config.dbPath)) {
+    // Quote the path so any stray whitespace in DB_PATH is visible rather than
+    // silently reformatting the message.
     throw new Error(
-      `SQLite database not found at ${config.dbPath}. ` +
+      `SQLite database not found at ${JSON.stringify(config.dbPath)}. ` +
         `Run the puzzle import first — see server/README.md.`,
     );
   }

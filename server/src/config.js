@@ -15,6 +15,18 @@ dotenv.config();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const serverRoot = path.resolve(here, "..");
 
+// Always trim. Values pasted into a hosting dashboard routinely pick up a
+// trailing newline or stray space, and an untrimmed path fails in a way that
+// looks nothing like whitespace: the file is plainly there in the directory
+// listing, yet every existence check for it misses, because the name being
+// looked up ends in "\n".
+function readEnv(name) {
+  const raw = process.env[name];
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
 // Resolve relative DB paths against server/, not the process CWD, so `npm run
 // dev` and `node src/index.js` behave identically regardless of where they're
 // launched from.
@@ -32,10 +44,10 @@ function parseOrigins(value) {
 }
 
 export const config = {
-  env: process.env.NODE_ENV || "development",
-  port: Number(process.env.PORT) || 3001,
-  dbPath: resolveDbPath(process.env.DB_PATH),
-  corsOrigins: parseOrigins(process.env.CORS_ORIGINS),
+  env: readEnv("NODE_ENV") || "development",
+  port: Number(readEnv("PORT")) || 3001,
+  dbPath: resolveDbPath(readEnv("DB_PATH")),
+  corsOrigins: parseOrigins(readEnv("CORS_ORIGINS")),
   serverRoot,
 };
 

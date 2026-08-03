@@ -7,12 +7,13 @@ import { createApp } from "./app.js";
 import { getDb, closeDb } from "./db/connection.js";
 import { getPuzzleCount } from "./modules/puzzles/puzzles.service.js";
 
-// Observed on Railway: re-attaching a volume to a fresh container can take
-// noticeably longer than a typical mount race (several seconds, not one) —
-// 15 attempts at 400ms (6s total) consistently wasn't enough. 45 attempts at
-// 750ms gives a ~34s window, comfortably past what was observed.
-const DB_WAIT_ATTEMPTS = 45;
-const DB_WAIT_DELAY_MS = 750;
+// The host can bind-mount the volume a moment after the app process starts
+// (Railway logs "Mounting volume on: ..." after our first check), so a brief
+// wait avoids failing on that. Kept short deliberately: a database that is
+// genuinely absent or misconfigured should surface quickly, not after a long
+// silent stall.
+const DB_WAIT_ATTEMPTS = 10;
+const DB_WAIT_DELAY_MS = 500;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
