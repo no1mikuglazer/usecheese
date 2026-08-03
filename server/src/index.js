@@ -1,5 +1,7 @@
 /* Cheese server — entrypoint. */
 
+import fs from "node:fs";
+import path from "node:path";
 import { config } from "./config.js";
 import { createApp } from "./app.js";
 import { getDb, closeDb } from "./db/connection.js";
@@ -36,6 +38,17 @@ async function openDatabaseWithRetry() {
       }
     }
   }
+  // Diagnostic dump — what does the container actually see at the mount
+  // point when we give up? This is the difference between "the volume is
+  // slow" and "the volume/path isn't what we think it is."
+  const dir = path.dirname(config.dbPath);
+  try {
+    const entries = fs.readdirSync(dir);
+    console.error(`[db] contents of ${dir}: ${entries.length ? entries.join(", ") : "(empty)"}`);
+  } catch (dirErr) {
+    console.error(`[db] could not read ${dir}: ${dirErr.message}`);
+  }
+
   throw lastError;
 }
 
