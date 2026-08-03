@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Cheese backend API — serves puzzle data from SQLite. Structured to host future features (accounts, cloud saves) without re-architecting.",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "node --watch src/index.js",

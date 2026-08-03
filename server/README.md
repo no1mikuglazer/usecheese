@@ -11,7 +11,9 @@ The frontend remains a separate, fully static site — it calls this API over
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer (required by `better-sqlite3`; older versions segfault
+  rather than failing cleanly, so the version is pinned in `engines` and
+  `.nvmrc`)
 - The source puzzle parquet (`chess-puzzles.parquet`, the Lichess puzzle
   export, ~825MB)
 
