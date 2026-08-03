@@ -264,6 +264,55 @@ The project now supports:
 - local-first architecture
 - modern multi-page interface
 
+# V1.2.1 — Licensing
+
+Completed: 02/07/2026
+
+- Added MIT LICENSE with new copyright information
+- Added copyright notice for Vihaan Productions to README
+
+# V1.2.2 — Website Is Now Live
+
+Completed: 03/07/2026
+
+- Cheese is now live in production
+- Cleaned up remaining top-level folder naming (`Home/` merged into project root)
+
+# V1.2.3 — Professional Folder Restructure
+
+Completed: 01/08/2026
+
+- Reorganized the entire project into a professional folder structure: `pages/`, `assets/`, `engine/stockfish/`, `data/eco/`, `data/masters/`, `docs/artifacts/`
+- Added `.gitignore`
+- Added technical documentation artifacts (PDF and PPTX)
+
+# V1.2.4 — Shared Board Core Extraction
+
+Completed: 01/08/2026
+
+- Extracted shared `assets/css/board-layout.css` and `assets/css/nav.css` stylesheets
+- Extracted shared `assets/js/board-core.js` module for board rendering and interaction
+- De-duplicated board logic between Analysis and Training, trimming both pages' scripts significantly
+
+# V1.2.5 — Drag-and-Drop Polish
+
+Completed: 02/08/2026
+
+- Smoothed out chessboard piece drag-and-drop in `board-core.js`
+
+# V1.2.6 — Favicon
+
+Completed: 02/08/2026
+
+- Added site favicon, wired into every page
+
+# V1.2.7 — Database/Opening Handoff Fixes
+
+Completed: 02/08/2026
+
+- Fixed Database → Opening Explorer → Analysis handoff data bugs
+- Corrected ECO opening data (`data/eco/ecoC.json`)
+
 ### Upcoming
 
 Future updates are planned to include:
