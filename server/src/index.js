@@ -5,19 +5,22 @@ import { createApp } from "./app.js";
 import { getDb, closeDb } from "./db/connection.js";
 import { getPuzzleCount } from "./modules/puzzles/puzzles.service.js";
 
-const DB_WAIT_ATTEMPTS = 15;
-const DB_WAIT_DELAY_MS = 400;
+// Observed on Railway: re-attaching a volume to a fresh container can take
+// noticeably longer than a typical mount race (several seconds, not one) —
+// 15 attempts at 400ms (6s total) consistently wasn't enough. 45 attempts at
+// 750ms gives a ~34s window, comfortably past what was observed.
+const DB_WAIT_ATTEMPTS = 45;
+const DB_WAIT_DELAY_MS = 750;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // On some hosts the volume holding the database is bind-mounted into the
-// container slightly after the app process starts, so the very first check
-// can race a mount that is still in progress (observed on Railway: the app's
-// own startup can run before its "Mounting volume on: ..." log line). Retry
-// briefly before treating a missing file as fatal, rather than failing on
-// what is often just a one-second timing gap.
+// container some time after the app process starts, so an early check can
+// race a mount that is still in progress. Retry for a while before treating a
+// missing file as fatal, rather than failing on what is often just a
+// several-second startup gap.
 async function openDatabaseWithRetry() {
   let lastError;
   for (let attempt = 1; attempt <= DB_WAIT_ATTEMPTS; attempt += 1) {
@@ -26,7 +29,9 @@ async function openDatabaseWithRetry() {
     } catch (err) {
       lastError = err;
       if (attempt < DB_WAIT_ATTEMPTS) {
-        console.log(`[db] not ready yet (attempt ${attempt}/${DB_WAIT_ATTEMPTS}), retrying...`);
+        if (attempt === 1 || attempt % 5 === 0) {
+          console.log(`[db] not ready yet (attempt ${attempt}/${DB_WAIT_ATTEMPTS}), retrying...`);
+        }
         await sleep(DB_WAIT_DELAY_MS);
       }
     }
