@@ -146,6 +146,15 @@ body {
 
 /* DRAG / MOVE ANIMATION HELPERS */
 
+/* The click-to-move glide (renderBoard() in script.js) positions the fly/cap
+   elements with `position: absolute` and left/top computed relative to the
+   board's own bounding rect. Without the board itself being a positioned
+   ancestor, those offsets resolve against the next positioned ancestor up
+   the tree instead — landing far from the board (visually: the piece
+   "flies in" from outside it) rather than from its actual square. Matches
+   Training/Analysis, which set this same rule locally for the same reason. */
+.board { position: relative; }
+
 .anim-fly,
 .anim-capture {
     width: 85%;
