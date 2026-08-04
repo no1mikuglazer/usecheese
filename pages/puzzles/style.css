@@ -174,9 +174,12 @@ body {
     background: linear-gradient(
         to right,
         rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.10) 45%,
-        rgba(255, 255, 255, 0.26) 100%
+        rgba(255, 255, 255, 0.16) 40%,
+        rgba(255, 255, 255, 0.42) 100%
     );
+    /* Lifts the streak off the mid-brown squares, which otherwise wash out a
+       purely translucent white at this opacity. */
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.18));
 }
 
 .drag-ghost {
