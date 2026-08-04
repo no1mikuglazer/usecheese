@@ -250,16 +250,30 @@ function renderBoard(suppressGlide, node = currentNode) {
   // symmetric gradient has no orientation and simply rotates with the board).
   drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, boardFlipped);
 
-  if (suppressGlide || boardFlipped) return;
+  // Only a drag skips the glide now — there the player moved the piece
+  // themselves, so re-animating it would replay a movement they just made.
+  // A flipped board no longer skips it: the clone is placed and counter-
+  // rotated for that orientation below, rather than the piece teleporting.
+  if (suppressGlide) return;
 
   if (before[move.to]) {
+    const capRect = before[move.to].rect;
+    const capPlace = placeBoardClone(
+      boardRect,
+      boardFlipped,
+      capRect.left - boardRect.left,
+      capRect.top - boardRect.top,
+      capRect.width,
+      capRect.height,
+    );
+
     const cap = document.createElement("img");
     cap.src = before[move.to].src;
     cap.className = "piece anim-capture";
     cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
-      width:${before[move.to].rect.width}px;height:${before[move.to].rect.height}px;
-      left:${before[move.to].rect.left - boardRect.left}px;
-      top:${before[move.to].rect.top - boardRect.top}px;`;
+      width:${capRect.width}px;height:${capRect.height}px;
+      left:${capPlace.left}px;top:${capPlace.top}px;
+      ${capPlace.counterRotate ? `transform:${capPlace.counterRotate};` : ""}`;
     boardEl.appendChild(cap);
     requestAnimationFrame(() => {
       cap.style.transition = "opacity 150ms ease";
@@ -271,18 +285,34 @@ function renderBoard(suppressGlide, node = currentNode) {
   const toEl = toSquareEl.querySelector(".piece");
   if (toEl) toEl.style.opacity = "0";
 
+  const flyPlace = placeBoardClone(
+    boardRect,
+    boardFlipped,
+    sl,
+    st,
+    fromData.rect.width,
+    fromData.rect.height,
+  );
+
+  // A translation in the board's local space appears reversed on screen once
+  // the board's own 180deg rotation is applied, so negate it when flipped.
+  const glideX = boardFlipped ? -(el - sl) : el - sl;
+  const glideY = boardFlipped ? -(et - st) : et - st;
+
   const fly = document.createElement("img");
   fly.src = fromData.src;
   fly.className = "piece anim-fly";
   fly.style.cssText = `position:absolute;pointer-events:none;z-index:20;
     width:${fromData.rect.width}px;height:${fromData.rect.height}px;
-    left:${sl}px;top:${st}px;will-change:transform;
-    transition:transform 200ms cubic-bezier(0.25,0.1,0.25,1);transform:translate(0,0);`;
+    left:${flyPlace.left}px;top:${flyPlace.top}px;will-change:transform;
+    transition:transform 200ms cubic-bezier(0.25,0.1,0.25,1);
+    transform:translate(0,0)${flyPlace.counterRotate};`;
   boardEl.appendChild(fly);
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      fly.style.transform = `translate(${el - sl}px,${et - st}px)`;
+      fly.style.transform =
+        `translate(${glideX}px,${glideY}px)${flyPlace.counterRotate}`;
     });
   });
 
@@ -294,6 +324,28 @@ function renderBoard(suppressGlide, node = currentNode) {
     },
     { once: true },
   );
+}
+
+// Animation clones (the gliding piece, the fading captured piece) are
+// absolutely-positioned children of .board, so their left/top are read in the
+// board's own coordinate space. On a flipped board that space is itself
+// rotated 180deg, which breaks a clone in two separate ways: positioned from
+// screen measurements it lands point-reflected across the board, and its
+// inline transform overrides the CSS rule that keeps pieces upright, so the
+// image renders upside-down.
+//
+// This converts a screen-space box into the board's local space and reports
+// the counter-rotation needed to cancel the board's own. `counterRotate` is
+// appended to the clone's transform, so it must come after any translate.
+function placeBoardClone(boardRect, flipped, screenLeft, screenTop, width, height) {
+  if (!flipped) {
+    return { left: screenLeft, top: screenTop, counterRotate: "" };
+  }
+  return {
+    left: boardRect.width - screenLeft - width,
+    top: boardRect.height - screenTop - height,
+    counterRotate: " rotate(180deg)",
+  };
 }
 
 // board-core.js's applyLastMoveHighlight() reads the global currentNode
