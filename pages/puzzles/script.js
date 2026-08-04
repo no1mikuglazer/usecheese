@@ -40,6 +40,58 @@ for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
   moveSounds[name] = audio;
 }
 
+// ── Piece asset preloading ──────────────────────────────────────────────────
+// renderBoard() paints by creating <img> elements and assigning .src. On an
+// uncached load the browser fetches each of the twelve piece PNGs separately,
+// so they decode at different times and pieces visibly pop in one by one —
+// while the board is already interactive. That is unfair on a streak: the
+// solver can be looking at a half-drawn position.
+//
+// There are only twelve distinct piece images for the whole app, so fetch and
+// decode all of them up front, then paint every square from that decoded
+// cache. After this resolves, a full board render is a synchronous DOM
+// operation with no network or decode work left to do.
+
+const PIECE_COLORS = ["w", "b"];
+const PIECE_TYPES = ["p", "r", "n", "b", "q", "k"];
+
+const pieceImageCache = new Map();
+
+function preloadPieceImages() {
+  const jobs = [];
+
+  for (const color of PIECE_COLORS) {
+    for (const type of PIECE_TYPES) {
+      const src = getPieceImage(color, type);
+      const img = new Image();
+      img.src = src;
+
+      // decode() resolves once the bitmap is ready to paint, which is the
+      // guarantee we actually need — `load` alone can still leave a decode to
+      // happen on the first paint. Older browsers without decode() fall back
+      // to the load event.
+      const ready = img.decode
+        ? img.decode()
+        : new Promise((resolve) => {
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+          });
+
+      jobs.push(
+        ready
+          .then(() => pieceImageCache.set(src, img))
+          // A single failed asset must never block the board forever; that
+          // square just falls back to a plain <img src> below.
+          .catch(() => {}),
+      );
+    }
+  }
+
+  return Promise.all(jobs);
+}
+
+const piecesReady = preloadPieceImages();
+
 // ── Puzzle state ────────────────────────────────────────────────────────────
 
 const PUZZLE_STATE = {
@@ -136,6 +188,13 @@ function renderBoard(suppressGlide, node = currentNode) {
   const boardEl = document.querySelector(".board");
   const before = snapshotBoard();
 
+  // Drop animation clones still in flight from an earlier render. Without
+  // this, switching puzzles or navigating history mid-animation leaves
+  // orphaned pieces layered over the new position.
+  boardEl
+    .querySelectorAll(".anim-fly, .anim-capture, .anim-trail")
+    .forEach((el) => el.remove());
+
   chess.load(node.fen);
   clearBoard();
 
@@ -145,9 +204,16 @@ function renderBoard(suppressGlide, node = currentNode) {
     row.forEach((piece, colIndex) => {
       if (!piece) return;
       const square = document.getElementById(files[colIndex] + (8 - rowIndex));
-      const img = document.createElement("img");
-      img.classList.add("piece");
-      img.src = getPieceImage(piece.color, piece.type);
+      const src = getPieceImage(piece.color, piece.type);
+
+      // Cloning the preloaded element reuses its already-decoded bitmap, so
+      // the whole position paints in one frame instead of each piece
+      // appearing as its own request finishes.
+      const cached = pieceImageCache.get(src);
+      const img = cached ? cached.cloneNode(false) : document.createElement("img");
+      if (!cached) img.src = src;
+      img.className = "piece";
+
       square.appendChild(img);
     });
   });
@@ -188,13 +254,62 @@ function renderBoard(suppressGlide, node = currentNode) {
   const toEl = toSquareEl.querySelector(".piece");
   if (toEl) toEl.style.opacity = "0";
 
-  const fly = document.createElement("img");
-  fly.src = fromData.src;
-  fly.className = "piece anim-fly";
+  // Board-relative start/end coordinates of the travelling piece. Measured
+  // once here and shared by both the trail and the piece itself, so the two
+  // animate along exactly the same path.
   const sl = fromData.rect.left - boardRect.left;
   const st = fromData.rect.top - boardRect.top;
   const el = toRect.left - boardRect.left;
   const et = toRect.top - boardRect.top;
+
+  // ── Motion trail ──────────────────────────────────────────────────────────
+  // A single element stretched from the source square towards the piece as it
+  // glides. It is anchored at the source, rotated once to the direction of
+  // travel, and grown with scaleX on the same curve and duration as the piece
+  // — so its leading edge tracks the piece rather than being drawn after the
+  // fact, and the orientation is correct for any direction (including the
+  // straight-line path of a knight's move) without special cases.
+  //
+  // Only transform and opacity animate, both compositor-driven, and every
+  // coordinate is reused from the measurements already taken above — there is
+  // no per-frame JavaScript and no repeated layout reads.
+  const trailDx = el - sl;
+  const trailDy = et - st;
+  const trailDistance = Math.hypot(trailDx, trailDy);
+
+  if (trailDistance > 1) {
+    const trailAngle = (Math.atan2(trailDy, trailDx) * 180) / Math.PI;
+    const trailThickness = Math.max(6, fromData.rect.height * 0.26);
+
+    const trail = document.createElement("div");
+    trail.className = "anim-trail";
+    trail.style.cssText = `position:absolute;pointer-events:none;z-index:15;
+      left:${sl + fromData.rect.width / 2}px;
+      top:${st + fromData.rect.height / 2 - trailThickness / 2}px;
+      width:${trailDistance}px;height:${trailThickness}px;
+      transform-origin:0 50%;
+      transform:rotate(${trailAngle}deg) scaleX(0);
+      will-change:transform,opacity;`;
+    boardEl.appendChild(trail);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        trail.style.transition =
+          "transform 200ms cubic-bezier(0.25,0.1,0.25,1), opacity 260ms ease 120ms";
+        trail.style.transform = `rotate(${trailAngle}deg) scaleX(1)`;
+        trail.style.opacity = "0";
+      });
+    });
+
+    // Removed on a timer rather than transitionend: two properties animate
+    // here, so the first to finish would otherwise tear down the element
+    // mid-fade.
+    scheduleStep(() => trail.remove(), 620);
+  }
+
+  const fly = document.createElement("img");
+  fly.src = fromData.src;
+  fly.className = "piece anim-fly";
   fly.style.cssText = `position:absolute;pointer-events:none;z-index:20;
     width:${fromData.rect.width}px;height:${fromData.rect.height}px;
     left:${sl}px;top:${st}px;will-change:transform;
@@ -602,7 +717,17 @@ function setupPuzzle(puzzle) {
   }, SETUP_MOVE_DELAY);
 }
 
+// Identifies the most recent load. Responses are only applied if they still
+// belong to it, so a slower earlier request can never overwrite a newer
+// puzzle — which previously left the board showing a puzzle outside the
+// rating range on screen. The difficulty presets make this reachable: they
+// call loadNewPuzzle() directly and, unlike Next/Hint/Retry, are not disabled
+// while a load is in flight.
+let activeLoadToken = 0;
+
 async function loadNewPuzzle() {
+  const token = ++activeLoadToken;
+
   cancelPendingSteps();
   puzzleState = PUZZLE_STATE.LOADING;
   awaitingOpponent = false;
@@ -613,8 +738,17 @@ async function loadNewPuzzle() {
 
   try {
     const puzzle = await fetchRandomPuzzle(min, max);
+    if (token !== activeLoadToken) return; // superseded while fetching
+
+    // Never hand over a board whose pieces haven't finished decoding. After
+    // the first load this is already settled and adds nothing.
+    await piecesReady;
+    if (token !== activeLoadToken) return; // superseded while assets loaded
+
     setupPuzzle(puzzle);
   } catch (err) {
+    if (token !== activeLoadToken) return; // a newer load owns the UI now
+
     puzzleState = PUZZLE_STATE.ERROR;
     currentPuzzle = null;
     setControlsBusy(false);
@@ -633,6 +767,10 @@ async function loadNewPuzzle() {
 
 function retryPuzzle() {
   if (!currentPuzzle) return;
+  // Claim the load token so any request still in flight is discarded rather
+  // than replacing the puzzle the solver just chose to retry.
+  activeLoadToken += 1;
+  cancelPendingSteps();
   setupPuzzle(currentPuzzle);
 }
 
