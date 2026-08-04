@@ -576,6 +576,10 @@ function setupPuzzle(puzzle) {
   updatePlayerBars();
 
   currentNode = { fen: puzzle.fen, move: null };
+  // Record this as history[0], the true starting position — otherwise Left
+  // Arrow could never rewind far enough to show the square the opponent's
+  // setup move actually came from, only the highlight on where it landed.
+  pushHistory();
   renderBoard(true);
 
   ratingEl.textContent = String(puzzle.rating);
