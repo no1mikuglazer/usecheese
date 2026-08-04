@@ -173,69 +173,6 @@ const streakCountEl = document.getElementById("pzStreakCount");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
-// ── Motion trail ────────────────────────────────────────────────────────────
-// A soft streak along the straight line between the source and destination
-// square centres. It is anchored at the source, rotated once to the direction
-// of travel, and grown with scaleX on the same curve and duration as the
-// gliding piece — so its leading edge tracks the piece rather than being
-// drawn after the fact, and the orientation follows automatically for every
-// direction, including the straight-line path of a knight's move.
-//
-// Only transform and opacity animate, both compositor-driven, and every
-// coordinate is passed in from measurements renderBoard has already taken —
-// no per-frame JavaScript, no repeated layout reads.
-function drawMotionTrail(boardEl, boardRect, fromRect, sl, st, el, et) {
-  const dx = el - sl;
-  const dy = et - st;
-  const distance = Math.hypot(dx, dy);
-  if (distance <= 1) return;
-
-  const thickness = Math.max(6, fromRect.height * 0.3);
-
-  // sl/st/el/et are screen-space offsets from the board's top-left corner,
-  // but left/top on a child of .board are interpreted in the board's own
-  // coordinate space. Those coincide only while the board is unrotated. When
-  // it is flipped the space is itself rotated 180deg, so a screen-space
-  // anchor would land point-reflected across the board. Convert the anchor
-  // into local space and pre-rotate by the same 180deg, which the board's
-  // own rotation then cancels — leaving the streak over the real squares,
-  // pointing the real way.
-  let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-  let anchorX = sl + fromRect.width / 2;
-  let anchorY = st + fromRect.height / 2;
-
-  if (boardFlipped) {
-    anchorX = boardRect.width - anchorX;
-    anchorY = boardRect.height - anchorY;
-    angle += 180;
-  }
-
-  const trail = document.createElement("div");
-  trail.className = "anim-trail";
-  trail.style.cssText = `position:absolute;pointer-events:none;z-index:15;
-    left:${anchorX}px;
-    top:${anchorY - thickness / 2}px;
-    width:${distance}px;height:${thickness}px;
-    transform-origin:0 50%;
-    transform:rotate(${angle}deg) scaleX(0);
-    will-change:transform,opacity;`;
-  boardEl.appendChild(trail);
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      trail.style.transition =
-        "transform 200ms cubic-bezier(0.25,0.1,0.25,1), opacity 300ms ease 160ms";
-      trail.style.transform = `rotate(${angle}deg) scaleX(1)`;
-      trail.style.opacity = "0";
-    });
-  });
-
-  // Removed on a timer rather than transitionend: two properties animate
-  // here, so whichever finished first would otherwise tear the element down
-  // mid-fade.
-  scheduleStep(() => trail.remove(), 700);
-}
-
 // Mirrors Training's renderBoard: repaint from the given FEN, re-apply the
 // last-move highlight, and glide the moved piece unless the caller already
 // showed the movement (drag) or the board is flipped (the clones would render
@@ -305,14 +242,13 @@ function renderBoard(suppressGlide, node = currentNode) {
   const el = toRect.left - boardRect.left;
   const et = toRect.top - boardRect.top;
 
-  // The trail is drawn for every move, deliberately ahead of the glide's own
-  // conditions below. It still reads correctly in the two cases the glide
-  // skips: a dragged piece (the user moved it themselves, so there is no
-  // glide to accompany — the streak shows the path it took), and a flipped
-  // board (the piece clone is skipped there because it would render
-  // upside-down, but a symmetric gradient has no orientation and simply
-  // rotates with the board).
-  drawMotionTrail(boardEl, boardRect, fromData.rect, sl, st, el, et);
+  // Drawn for every move, deliberately ahead of the glide's own conditions
+  // below. It still reads correctly in the two cases the glide skips: a
+  // dragged piece (the user moved it themselves, so there is no glide to
+  // accompany — the streak shows the path it took), and a flipped board (the
+  // piece clone is skipped there because it would render upside-down, but a
+  // symmetric gradient has no orientation and simply rotates with the board).
+  drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, boardFlipped);
 
   if (suppressGlide || boardFlipped) return;
 

@@ -162,25 +162,9 @@ body {
     object-fit: contain;
 }
 
-/* MOTION TRAIL — the soft streak that follows a gliding piece.
-   Transparent at the source end and strongest at the leading edge, so it
-   reads as fading out behind the piece rather than as a line drawn on the
-   board. Sizing, rotation and the growth animation are set inline by
-   renderBoard(), which knows the direction and distance of the move. */
-
-.anim-trail {
-    border-radius: 999px;
-    opacity: 1;
-    background: linear-gradient(
-        to right,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.16) 40%,
-        rgba(255, 255, 255, 0.42) 100%
-    );
-    /* Lifts the streak off the mid-brown squares, which otherwise wash out a
-       purely translucent white at this opacity. */
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.18));
-}
+/* .anim-trail — the motion streak — is styled in the shared
+   assets/css/board-layout.css, alongside the drawMotionTrail() helper it
+   belongs to in assets/js/board-core.js. */
 
 .drag-ghost {
     width: auto;

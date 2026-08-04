@@ -219,6 +219,33 @@
     flex-shrink:0;
 }
 
+/* MOTION TRAIL — the soft streak that follows a moving piece.
+   Defined here rather than in each page's own stylesheet because all three
+   board pages (Analysis, Training, Puzzles) share the drawMotionTrail helper
+   in assets/js/board-core.js, and a single definition keeps them identical.
+   Transparent at the source end and strongest at the leading edge, so it
+   reads as fading out behind the piece rather than as a line drawn on the
+   board. Size, rotation and the growth animation are set inline by
+   drawMotionTrail(), which knows the direction and distance of the move. */
+
+.anim-trail{
+
+    border-radius:999px;
+
+    opacity:1;
+
+    background:
+    linear-gradient(to right,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.16) 40%,
+        rgba(255,255,255,0.42) 100%);
+
+    /* Lifts the streak off the mid-brown squares, which otherwise wash out a
+       purely translucent white at this opacity. */
+    filter:
+    drop-shadow(0 0 6px rgba(255,255,255,0.18));
+}
+
 /* EVAL BAR CONTAINER — a normal flex item stretched to match .board's
    height by .board-row (align-items:stretch), so it never needs its own
    hardcoded height or magic-number position. Only present on pages whose

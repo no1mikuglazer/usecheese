@@ -239,11 +239,8 @@ function renderBoard(suppressGlide) {
     flashCheck(findKingSquare(chess, chess.turn()));
   }
 
-  // When the board is flipped (player is Black) the glide clones would render
-  // mirrored/un-rotated and cause a per-move orientation flicker, so skip them.
-  if (suppressGlide || boardFlipped || !currentNode.move) return;
+  if (!currentNode.move) return;
 
-  // ── Glide animation for click-to-move ──────────────────────────────────────
   const move = currentNode.move;
   const fromData = before[move.from];
   if (!fromData) return;
@@ -254,6 +251,20 @@ function renderBoard(suppressGlide) {
   const boardRect = boardEl.getBoundingClientRect();
   const toRect = toSquareEl.getBoundingClientRect();
 
+  // ── Motion trail ───────────────────────────────────────────────────────────
+  // Drawn ahead of the glide's own conditions below, so it also appears for a
+  // dragged piece and on a flipped board. Unlike the piece clone, a symmetric
+  // gradient has no orientation, so it simply rotates with the board (it is
+  // told about the flip so its anchor can be converted into the board's own,
+  // rotated coordinate space). Shared with Analysis and Puzzles via
+  // assets/js/board-core.js.
+  drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, boardFlipped);
+
+  // When the board is flipped (player is Black) the glide clones would render
+  // mirrored/un-rotated and cause a per-move orientation flicker, so skip them.
+  if (suppressGlide || boardFlipped) return;
+
+  // ── Glide animation for click-to-move ──────────────────────────────────────
   // Fade out any captured piece
   if (before[move.to]) {
     const cap = document.createElement("img");

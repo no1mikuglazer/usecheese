@@ -249,9 +249,8 @@ function renderBoard(suppressGlide) {
     flashCheck(findKingSquare(chess, chess.turn()));
   }
 
-  if (suppressGlide || !currentNode.move) return;
+  if (!currentNode.move) return;
 
-  // ── Glide animation for click-to-move ──────────────────────────────────────
   const move = currentNode.move;
   const fromData = before[move.from];
   if (!fromData) return;
@@ -262,6 +261,17 @@ function renderBoard(suppressGlide) {
   const boardRect = boardEl.getBoundingClientRect();
   const toRect = toSquareEl.getBoundingClientRect();
 
+  // ── Motion trail ───────────────────────────────────────────────────────────
+  // Drawn ahead of the glide's own condition below, so a dragged piece gets
+  // one too — the user moved it themselves, so there is no glide to
+  // accompany, but the streak still shows the path it took. Analysis never
+  // flips the board, hence `false`. Shared with Training and Puzzles via
+  // assets/js/board-core.js.
+  drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, false);
+
+  if (suppressGlide) return;
+
+  // ── Glide animation for click-to-move ──────────────────────────────────────
   // Fade out any captured piece
   if (before[move.to]) {
     const cap = document.createElement("img");
