@@ -60,6 +60,21 @@ let failedThisPuzzle = false;
 let hintLevel = 0; // 0 = none, 1 = piece shown, 2 = full move shown
 let boardFlipped = false;
 
+// ── Move history (keyboard navigation) ──────────────────────────────────────
+// positionHistory holds only positions the solver has actually reached this
+// attempt — entries are appended exclusively from pushHistory(), called after
+// the setup move, after each opponent reply, and after a verified-correct
+// solver move. It is never pre-populated from solutionMoves, so there is
+// nothing in it for Right Arrow to reveal ahead of legitimate play: the
+// solution line the API returns can contain moves the solver hasn't earned
+// yet, but this array only ever grows in step with what they've actually done.
+let positionHistory = [];
+let historyIndex = -1; // which position is currently displayed
+let furthestIndex = -1; // highest index legitimately reached this attempt — the
+// Right Arrow ceiling. Deliberately tracked separately from solutionMoves.length
+// (or currentPuzzle.moves.length) so the boundary can never be derived from,
+// or accidentally widened by, data the solver hasn't earned.
+
 const session = { solved: 0, attempted: 0, streak: 0 };
 
 // Timers are tracked so a new puzzle never gets interrupted by a reply
@@ -106,15 +121,22 @@ const streakCountEl = document.getElementById("pzStreakCount");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
-// Mirrors Training's renderBoard: repaint from the current FEN, re-apply the
+// Mirrors Training's renderBoard: repaint from the given FEN, re-apply the
 // last-move highlight, and glide the moved piece unless the caller already
 // showed the movement (drag) or the board is flipped (the clones would render
 // mirrored).
-function renderBoard(suppressGlide) {
+//
+// `node` defaults to the live position (currentNode) — every existing call
+// site keeps behaving exactly as before. History navigation is the only
+// caller that ever passes a different node, to paint a past position without
+// touching currentNode (which stays the source of truth for legality checks,
+// hints, and everywhere else that must always reflect real progress rather
+// than whatever the solver is currently looking at).
+function renderBoard(suppressGlide, node = currentNode) {
   const boardEl = document.querySelector(".board");
   const before = snapshotBoard();
 
-  chess.load(currentNode.fen);
+  chess.load(node.fen);
   clearBoard();
 
   const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -130,14 +152,14 @@ function renderBoard(suppressGlide) {
     });
   });
 
-  applyLastMoveHighlight();
+  applyLastMoveHighlightFor(node.move);
   if (chess.in_check()) {
     flashCheck(findKingSquare(chess, chess.turn()));
   }
 
-  if (suppressGlide || boardFlipped || !currentNode.move) return;
+  if (suppressGlide || boardFlipped || !node.move) return;
 
-  const move = currentNode.move;
+  const move = node.move;
   const fromData = before[move.from];
   if (!fromData) return;
 
@@ -193,6 +215,22 @@ function renderBoard(suppressGlide) {
     },
     { once: true },
   );
+}
+
+// board-core.js's applyLastMoveHighlight() reads the global currentNode
+// directly, which would highlight the LIVE last move even while a past
+// position is being displayed via history navigation. This local version
+// takes the move explicitly instead, so renderBoard's `node` argument stays
+// the single source of truth for what's on screen. (board-core.js's version
+// is left untouched — Analysis and Training both rely on its current,
+// global-reading signature.)
+function applyLastMoveHighlightFor(move) {
+  clearBoardHighlights();
+  if (!move) return;
+  const fromSq = document.getElementById(move.from);
+  const toSq = document.getElementById(move.to);
+  if (fromSq) fromSq.classList.add("last-move");
+  if (toSq) toSq.classList.add("last-move");
 }
 
 // Puzzle-specific square feedback. board-core's clearBoardHighlights only
@@ -277,6 +315,73 @@ function setControlsBusy(busy) {
   retryBtn.disabled = busy || !currentPuzzle;
 }
 
+// ── Move history / keyboard navigation ──────────────────────────────────────
+
+// Snapshot the live position into history. Called only after currentNode has
+// just legitimately advanced (the setup move, an opponent reply, or a
+// verified-correct solver move) — never speculatively, and never for a
+// position the solver merely navigated to. historyIndex is pulled forward to
+// match: new live progress always takes over the display, mirroring how
+// Training's move list jumps to a new move as soon as one is played.
+function pushHistory() {
+  positionHistory.push({ fen: currentNode.fen, move: currentNode.move });
+  furthestIndex = positionHistory.length - 1;
+  historyIndex = furthestIndex;
+}
+
+function resetHistory() {
+  positionHistory = [];
+  historyIndex = -1;
+  furthestIndex = -1;
+}
+
+function isViewingLivePosition() {
+  return historyIndex === furthestIndex;
+}
+
+// Paints a past position without touching currentNode, so nothing that
+// depends on currentNode as "the real game state" (playMove, the click/drag
+// handlers, showHint) is affected by merely looking at history.
+function showHistoryPosition(index) {
+  const node = positionHistory[index];
+  if (!node) return;
+
+  historyIndex = index;
+  clearValidMoves();
+  if (selectedSquare) {
+    selectedSquare.style.outline = "none";
+    selectedSquare = null;
+  }
+  renderBoard(true, node);
+}
+
+// delta: -1 for Left Arrow, +1 for Right Arrow. The furthestIndex bound is
+// the anti-cheat check — Right Arrow can only ever reach positions already
+// pushed by legitimate play, never solutionMoves ahead of them.
+function navigateHistory(delta) {
+  if (positionHistory.length === 0) return;
+  const target = historyIndex + delta;
+  if (target < 0 || target > furthestIndex) return;
+  showHistoryPosition(target);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+
+  // Don't hijack arrow keys while the user is typing (the rating-range
+  // inputs are the only text fields on this page, but this stays general).
+  const active = document.activeElement;
+  const tag = active && active.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.isContentEditable)) {
+    return;
+  }
+
+  if (!currentPuzzle || positionHistory.length === 0) return;
+
+  e.preventDefault();
+  navigateHistory(e.key === "ArrowLeft" ? -1 : 1);
+});
+
 // ── Move application ────────────────────────────────────────────────────────
 
 // Convert a chess.js move object to the UCI form the API uses.
@@ -299,6 +404,7 @@ function applyScriptedMove(uci) {
 
   const gaveCheck = chess.in_check();
   currentNode = { fen: chess.fen(), move };
+  pushHistory();
   renderBoard();
   playSound(moveSoundName(move, gaveCheck));
   return true;
@@ -366,6 +472,7 @@ function playMove(moveInput, suppressGlide) {
   const gaveCheck = chess.in_check();
   currentNode = { fen: chess.fen(), move };
   solutionIndex += 1;
+  pushHistory();
 
   renderBoard(suppressGlide);
   playSound(moveSoundName(move, gaveCheck));
@@ -457,6 +564,7 @@ function setupPuzzle(puzzle) {
   failedThisPuzzle = false;
   hintLevel = 0;
   awaitingOpponent = true; // the setup move is still to come
+  resetHistory();
 
   chess.load(puzzle.fen);
 
@@ -533,6 +641,14 @@ function retryPuzzle() {
 function showHint() {
   if (puzzleState !== PUZZLE_STATE.SOLVING || awaitingOpponent) return;
 
+  // A hint describes the live position's next move; showing it while a past
+  // position is on screen would highlight squares that don't match what's
+  // displayed.
+  if (!isViewingLivePosition()) {
+    showToast("Go to the current position to continue");
+    return;
+  }
+
   const uci = solutionMoves[solutionIndex];
   if (!uci) return;
 
@@ -575,6 +691,14 @@ function canInteract() {
 squares.forEach((square) => {
   square.addEventListener("click", () => {
     if (!canInteract()) return;
+
+    // Browsing history: the position on screen isn't the live one, so a move
+    // played here would be evaluated against a stale board. Same idiom as
+    // Training's "Go to the latest move to continue".
+    if (!isViewingLivePosition()) {
+      showToast("Go to the current position to continue");
+      return;
+    }
 
     chess.load(currentNode.fen);
     if (chess.turn() !== solverColor) return;
@@ -704,6 +828,11 @@ function startDrag(e, square) {
   const pieceEl = square.querySelector(".piece");
   if (!pieceEl) return;
   if (!canInteract()) return;
+
+  if (!isViewingLivePosition()) {
+    showToast("Go to the current position to continue");
+    return;
+  }
 
   chess.load(currentNode.fen);
   if (chess.turn() !== solverColor) return;
