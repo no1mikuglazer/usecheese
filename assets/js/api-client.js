@@ -7,13 +7,19 @@
    hostname instead. Opening the site from localhost talks to a locally
    running server; anywhere else talks to production. */
 
-const CHEESE_API_BASE = (function () {
-  const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1" || host === "") {
-    return "http://localhost:3001/api";
-  }
-  return "https://api.usecheese.xyz/api";
-})();
+/* A page may have set this already in its <head> so it can start a request
+   before the scripts finish loading (the Puzzles page does this). Reuse that
+   value when present so both agree on a single base URL at runtime; otherwise
+   derive it here as normal. */
+const CHEESE_API_BASE =
+  window.CHEESE_API_BASE ||
+  (function () {
+    const host = window.location.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "") {
+      return "http://localhost:3001/api";
+    }
+    return "https://api.usecheese.xyz/api";
+  })();
 
 /* Thrown for any non-2xx response. `code` carries the server's stable error
    code (e.g. "no_puzzles_in_range") so callers can branch on it instead of

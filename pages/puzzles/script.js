@@ -270,16 +270,27 @@ function renderBoard(suppressGlide, node = currentNode) {
     const cap = document.createElement("img");
     cap.src = before[move.to].src;
     cap.className = "piece anim-capture";
+    // The transition is declared up front and the value changed two frames
+    // later. Setting both together lets the browser collapse them into one
+    // style resolution, in which case no transition runs — and the element,
+    // whose removal was hooked to transitionend, then lingers invisibly at
+    // opacity 0 and inflates the board's piece count.
     cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
       width:${capRect.width}px;height:${capRect.height}px;
       left:${capPlace.left}px;top:${capPlace.top}px;
+      transition:opacity 150ms ease;opacity:1;
       ${capPlace.counterRotate ? `transform:${capPlace.counterRotate};` : ""}`;
     boardEl.appendChild(cap);
+
     requestAnimationFrame(() => {
-      cap.style.transition = "opacity 150ms ease";
-      cap.style.opacity = "0";
-      cap.addEventListener("transitionend", () => cap.remove(), { once: true });
+      requestAnimationFrame(() => {
+        cap.style.opacity = "0";
+      });
     });
+
+    // Removal is scheduled rather than left to transitionend alone, so a
+    // transition that never fires cannot strand the element.
+    scheduleStep(() => cap.remove(), 400);
   }
 
   const toEl = toSquareEl.querySelector(".piece");
@@ -316,14 +327,17 @@ function renderBoard(suppressGlide, node = currentNode) {
     });
   });
 
-  fly.addEventListener(
-    "transitionend",
-    () => {
-      fly.remove();
-      if (toEl) toEl.style.opacity = "1";
-    },
-    { once: true },
-  );
+  // The destination piece is hidden while the clone flies over it, so this
+  // must run even if the transition never fires — otherwise that piece would
+  // stay invisible until the next render. Scheduled as well as hooked to
+  // transitionend, and written to be safe to run twice.
+  const finishGlide = () => {
+    fly.remove();
+    if (toEl) toEl.style.opacity = "1";
+  };
+
+  fly.addEventListener("transitionend", finishGlide, { once: true });
+  scheduleStep(finishGlide, 450);
 }
 
 // Animation clones (the gliding piece, the fading captured piece) are
@@ -741,6 +755,36 @@ function setupPuzzle(puzzle) {
 // while a load is in flight.
 let activeLoadToken = 0;
 
+/* Claims the request the page head started during HTML parse, so the first
+   puzzle does not wait for the scripts to finish loading before its fetch
+   even begins.
+ *
+ * One-shot: it is cleared on the first call, so every later puzzle — and any
+ * change of difficulty — goes through a normal request. Returns null rather
+ * than throwing whenever it cannot be used, letting the caller fall back to
+ * an ordinary fetch, which also produces the proper typed errors.
+ */
+async function takePrefetchedPuzzle(min, max) {
+  const prefetch = window.__cheesePuzzlePrefetch;
+  if (!prefetch) return null;
+  window.__cheesePuzzlePrefetch = null;
+
+  // The head requested a fixed range. If the inputs on screen say something
+  // else (a stale default, or a preset clicked before this resolved), the
+  // prefetched puzzle is not the one the user asked for.
+  if (prefetch.min !== min || prefetch.max !== max) return null;
+
+  try {
+    const puzzle = await prefetch.promise;
+    if (!puzzle || typeof puzzle.rating !== "number") return null;
+    // Belt and braces: never show a puzzle outside the range on display.
+    if (puzzle.rating < min || puzzle.rating > max) return null;
+    return puzzle;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function loadNewPuzzle() {
   const token = ++activeLoadToken;
 
@@ -753,7 +797,8 @@ async function loadNewPuzzle() {
   const { min, max } = readRatingRange();
 
   try {
-    const puzzle = await fetchRandomPuzzle(min, max);
+    const puzzle =
+      (await takePrefetchedPuzzle(min, max)) || (await fetchRandomPuzzle(min, max));
     if (token !== activeLoadToken) return; // superseded while fetching
 
     // Never hand over a board whose pieces haven't finished decoding. After

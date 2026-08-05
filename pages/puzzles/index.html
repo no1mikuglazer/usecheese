@@ -7,6 +7,65 @@
     <title>Cheese — Puzzles</title>
     <meta name="description" content="Cheese Puzzles — train your tactics." />
     <link rel="icon" type="image/svg+xml" href="../../assets/icons/favicon.svg?v=1" />
+
+    <!-- The API and the chess.js CDN are separate origins that would otherwise
+         each pay a full DNS + TCP + TLS handshake at the moment they are first
+         needed. Warming them here overlaps that cost with the stylesheet and
+         script downloads below instead of adding it to the critical path.
+         `crossorigin` is required on the API hint: without it the warmed
+         socket is not reused for the CORS fetch, and the hint does nothing. -->
+    <link rel="preconnect" href="https://api.usecheese.xyz" crossorigin />
+    <link rel="dns-prefetch" href="https://api.usecheese.xyz" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+
+    <script>
+      /* Start the first puzzle request during HTML parse, in parallel with
+         everything below.
+
+         It previously ran from the bottom of script.js — the last of four
+         scripts — so it could not begin until chess.js, board-core.js and
+         api-client.js had all downloaded and executed. Measured on a cold
+         load that was ~850ms of dead time before the request even started.
+
+         This changes only WHEN the request is issued. It is the same single
+         request to the same endpoint: the server still chooses the puzzle,
+         and the client still holds exactly one puzzle at a time. Nothing is
+         buffered and no future puzzle is fetched ahead of being needed.
+
+         The range must match the inputs' initial values in the sidebar below;
+         loadNewPuzzle() re-checks the returned puzzle against the range that
+         is actually on screen and silently falls back to a normal fetch if it
+         does not match, so drifting defaults degrade rather than mislead. */
+      (function () {
+        var host = window.location.hostname;
+        // Kept in sync with assets/js/api-client.js, which reuses this value
+        // when present so both agree on a single base URL at runtime.
+        window.CHEESE_API_BASE =
+          host === "localhost" || host === "127.0.0.1" || host === ""
+            ? "http://localhost:3001/api"
+            : "https://api.usecheese.xyz/api";
+
+        var min = 1400;
+        var max = 1800;
+
+        var promise = fetch(
+          window.CHEESE_API_BASE +
+            "/puzzles/random?minRating=" + min + "&maxRating=" + max,
+        ).then(function (res) {
+          if (!res.ok) throw new Error("prefetch failed: " + res.status);
+          return res.json();
+        });
+
+        // Nothing consumes a rejection until loadNewPuzzle() runs, so absorb
+        // it here to avoid an unhandled promise rejection in the console.
+        // Attached to the local promise rather than read back off the global,
+        // so this never depends on the assignment below having taken effect.
+        promise.catch(function () {});
+
+        window.__cheesePuzzlePrefetch = { min: min, max: max, promise: promise };
+      })();
+    </script>
+
     <link rel="stylesheet" href="../../assets/css/nav.css" />
     <link rel="stylesheet" href="../../assets/css/board-layout.css" />
     <link rel="stylesheet" href="style.css" />
