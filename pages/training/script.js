@@ -270,16 +270,27 @@ function renderBoard(suppressGlide) {
     const cap = document.createElement("img");
     cap.src = before[move.to].src;
     cap.className = "piece anim-capture";
+    // The transition is declared up front and the value changed two frames
+    // later. Setting both together lets the browser collapse them into one
+    // style resolution, in which case no transition runs — and the element,
+    // whose removal was hooked to transitionend, then lingers invisibly at
+    // opacity 0 and inflates the board's piece count.
     cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
       width:${before[move.to].rect.width}px;height:${before[move.to].rect.height}px;
       left:${before[move.to].rect.left - boardRect.left}px;
-      top:${before[move.to].rect.top - boardRect.top}px;`;
+      top:${before[move.to].rect.top - boardRect.top}px;
+      transition:opacity 150ms ease;opacity:1;`;
     boardEl.appendChild(cap);
+
     requestAnimationFrame(() => {
-      cap.style.transition = "opacity 150ms ease";
-      cap.style.opacity = "0";
-      cap.addEventListener("transitionend", () => cap.remove(), { once: true });
+      requestAnimationFrame(() => {
+        cap.style.opacity = "0";
+      });
     });
+
+    // Removal is scheduled rather than left to transitionend alone, so a
+    // transition that never fires cannot strand the element.
+    setTimeout(() => cap.remove(), 400);
   }
 
   // Glide the piece
@@ -305,14 +316,17 @@ function renderBoard(suppressGlide) {
     });
   });
 
-  fly.addEventListener(
-    "transitionend",
-    () => {
-      fly.remove();
-      if (toEl) toEl.style.opacity = "1";
-    },
-    { once: true },
-  );
+  // The destination piece is hidden while the clone flies over it, so this
+  // must run even if the transition never fires — otherwise that piece would
+  // stay invisible until the next render. Scheduled as well as hooked to
+  // transitionend, and written to be safe to run twice.
+  const finishGlide = () => {
+    fly.remove();
+    if (toEl) toEl.style.opacity = "1";
+  };
+
+  fly.addEventListener("transitionend", finishGlide, { once: true });
+  setTimeout(finishGlide, 450);
 }
 
 // clearBoard, getPieceImage, HIGHLIGHT_FILES, clearBoardHighlights,
