@@ -19,6 +19,10 @@
     --gap-md: clamp(14px, 1.5vw, 32px);
     --sidebar-w: clamp(320px, 27vw, 600px);
     --board-area-h: calc(var(--board-size) + (var(--player-h) * 2) + (var(--row-gap) * 2));
+
+    /* Single place to change right-click annotation color across every
+       board page (Analysis, Training, Puzzles) — see assets/js/board-annotations.js. */
+    --board-annotation-color: 255, 152, 0; /* orange, as an R,G,B triplet for rgba() */
 }
 
 /* APP CONTAINER */
@@ -217,6 +221,51 @@
     0 0 24px rgba(0,0,0,0.35);
 
     flex-shrink:0;
+}
+
+/* BOARD ANNOTATIONS — the right-click circle/arrow overlay.
+   Defined here rather than per-page because Analysis, Training and Puzzles
+   all attach the same assets/js/board-annotations.js module to their board,
+   and a single definition keeps them visually identical — changing
+   thickness/opacity/color for every board happens in exactly one place.
+
+   The <svg> is inserted as a child of .board by board-annotations.js and
+   sized to fill it exactly; .board's own `overflow:hidden` and rounded
+   corners clip it automatically, and when .board-area.flipped rotates
+   .board 180deg, this overlay rotates right along with it (drawn entirely
+   in fixed, unflipped grid coordinates — see the module's file header for
+   why that is sufficient on its own to handle both orientations). */
+
+.board-annotations{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:22; /* above pieces and the anim-fly/anim-capture/anim-trail clones (max 20), below the fixed drag-ghost (1000) */
+}
+
+.board-annotation-arrow{
+    stroke:rgb(var(--board-annotation-color));
+    stroke-width:0.11;
+    stroke-linecap:round;
+    opacity:0.85;
+}
+
+.board-annotation-arrow-preview{
+    opacity:0.55;
+}
+
+.board-annotation-arrowhead-fill{
+    fill:rgb(var(--board-annotation-color));
+    opacity:0.85;
+}
+
+.board-annotation-circle{
+    fill:none;
+    stroke:rgb(var(--board-annotation-color));
+    stroke-width:0.09;
+    opacity:0.85;
 }
 
 /* MOTION TRAIL — the soft streak that follows a moving piece.

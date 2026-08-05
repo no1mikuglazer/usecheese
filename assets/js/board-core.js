@@ -780,6 +780,14 @@ function resetAnalysisState() {
   root.fen = chess.fen();
   currentNode = root;
   latestEngineUCILine = [];
+
+  // A brand-new game/position should not carry over hand-drawn circles and
+  // arrows from whatever was previously on the board. `boardAnnotations` is
+  // the page-level global a page gets back from attachBoardAnnotations() —
+  // guarded so this is a no-op on a page that has not set one up.
+  if (typeof boardAnnotations !== "undefined" && boardAnnotations) {
+    boardAnnotations.clear();
+  }
 }
 
 function formatSavedDate(iso) {

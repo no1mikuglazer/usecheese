@@ -17,6 +17,12 @@ const chess = new Chess();
 
 const squares = document.querySelectorAll(".square");
 
+// Right-click circles/arrows (assets/js/board-annotations.js). Training does
+// flip its board (playing as Black) — the module needs no orientation info
+// regardless, since it draws in fixed grid coordinates and lets the board's
+// own CSS rotation flip it; see that file's header for why.
+const boardAnnotations = attachBoardAnnotations(document.querySelector(".board"));
+
 const moveTreeContainer = document.getElementById("moveTree");
 
 const evalScore = document.getElementById("evalScore");

@@ -15,6 +15,11 @@
 const squares = document.querySelectorAll(".square");
 const chess = new Chess();
 
+// Right-click circles/arrows (assets/js/board-annotations.js). Puzzles flips
+// its board depending on which side is solving — the module needs no
+// orientation info regardless; see that file's header for why.
+const boardAnnotations = attachBoardAnnotations(document.querySelector(".board"));
+
 // board-core.js reads `currentNode.fen` (for legality checks) and
 // `currentNode.move` (for the last-move highlight). Puzzles are a single
 // forced line with no branching, so a plain object stands in for Analysis's
@@ -696,6 +701,9 @@ function setupPuzzle(puzzle) {
   clearPuzzleMarks();
   clearValidMoves();
   clearBoardHighlights();
+  // A new puzzle (including Retry, which restarts the same one from scratch)
+  // must never carry over circles/arrows drawn while solving the last one.
+  boardAnnotations.clear();
 
   if (selectedSquare) {
     selectedSquare.style.outline = "none";
@@ -1082,6 +1090,10 @@ function startDrag(e, square) {
 const boardElForDrag = document.querySelector(".board");
 
 boardElForDrag.addEventListener("mousedown", (e) => {
+  // Analysis and Training already guard this; Puzzles did not. Without it, a
+  // right-mousedown used to start an annotation arrow could simultaneously
+  // start a piece drag underneath it.
+  if (e.button !== 0) return;
   const square = e.target.closest(".square");
   if (square) startDrag(e, square);
 });

@@ -18,6 +18,11 @@ const chess = new Chess();
 
 const squares = document.querySelectorAll(".square");
 
+// Right-click circles/arrows (assets/js/board-annotations.js). Analysis
+// never flips its board, but the module needs no orientation info regardless
+// — see that file's header for why.
+const boardAnnotations = attachBoardAnnotations(document.querySelector(".board"));
+
 const moveTreeContainer = document.getElementById("moveTree");
 
 const evalScore = document.getElementById("evalScore");
@@ -840,6 +845,8 @@ newGameBtn.addEventListener("click", () => {
 
   updateEvalBar(0);
 
+  boardAnnotations.clear();
+
   refreshUI();
 });
 
@@ -873,6 +880,8 @@ deleteGameBtn.addEventListener("click", () => {
   engineDepth.textContent = "depth=0 | " + STOCKFISH_VERSION;
 
   updateEvalBar(0);
+
+  boardAnnotations.clear();
 
   refreshUI();
 });
