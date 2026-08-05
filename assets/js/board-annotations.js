@@ -119,7 +119,7 @@
     // ~0.083 units beyond that point, so the visible arrowhead tip actually
     // lands about (HEAD_INSET - 0.083) units short of the destination center.
     const TAIL_INSET = 0.28;
-    const HEAD_INSET = 0.22;
+    const HEAD_INSET = 0.1;
 
     function buildArrowLine(fromId, toId) {
       const from = squareCenter(fromId);
