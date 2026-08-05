@@ -113,9 +113,13 @@
     // Arrow endpoints are inset from the square centers: the tail so it does
     // not appear to originate from inside the piece artwork, the head so the
     // marker's own triangle lands just short of the destination square's
-    // center rather than overlapping it.
+    // center rather than overlapping it. HEAD_INSET is the inset of the raw
+    // line endpoint; the marker (viewBox 0 0 10 10, refX 8.2, markerWidth 4.2,
+    // rendered at the 0.11 stroke width) then draws its own tip a further
+    // ~0.083 units beyond that point, so the visible arrowhead tip actually
+    // lands about (HEAD_INSET - 0.083) units short of the destination center.
     const TAIL_INSET = 0.28;
-    const HEAD_INSET = 0.38;
+    const HEAD_INSET = 0.22;
 
     function buildArrowLine(fromId, toId) {
       const from = squareCenter(fromId);
