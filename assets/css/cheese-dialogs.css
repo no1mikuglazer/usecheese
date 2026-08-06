@@ -1,8 +1,8 @@
 /* Cheese — shared dialog/modal system (blocking alert/confirm/prompt
-   replacements). Only linked from pages/analysis/index.html for now — see
-   assets/js/cheese-dialogs.js's file header — but kept in assets/ rather
-   than pages/analysis/ so it can be linked from other pages later without
-   moving anything.
+   replacements). Linked from pages/analysis/index.html and
+   pages/training/index.html — see assets/js/cheese-dialogs.js's file
+   header — but kept in assets/ rather than a page directory so it can be
+   linked from other pages later without moving anything.
 
    Visual language matches the toast notification and the Import PGN modal
    already established on the Analysis page: black background, sharp
@@ -22,6 +22,20 @@
     justify-content: center;
     z-index: 3000;
     padding: 24px;
+    /* Every page that loads this file also has the fixed left-nav sidebar
+       (assets/css/nav.css) permanently occupying --cheese-sidebar-w on the
+       left, offset via each page's own .app-container padding — so the
+       board+panel content those pages show is actually centered in the
+       viewport MINUS the sidebar, not the full viewport. Centering the
+       backdrop's flex content on the full 100vw (as inset:0 alone would)
+       put the dialog about half the sidebar's width left of where that
+       content visually sits. This reproduces the exact same offset via the
+       same variable, so the dialog aligns with the workspace the user is
+       actually looking at instead of the raw viewport. The backdrop itself
+       still covers the full viewport (inset:0 is untouched) so it keeps
+       dimming/blocking the sidebar too — only the centering reference for
+       the dialog BOX shifts. */
+    padding-left: calc(var(--cheese-sidebar-w, 220px) + 24px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;

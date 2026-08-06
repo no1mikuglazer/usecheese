@@ -1242,6 +1242,12 @@ body{
     justify-content: center;
     z-index: 2000;
     padding: 24px;
+    /* Centers the modal in the workspace to the right of the fixed left-nav
+       sidebar (--cheese-sidebar-w, assets/css/nav.css) rather than the full
+       viewport — same reasoning as .cheese-dialog-overlay in
+       assets/css/cheese-dialogs.css. The backdrop itself still covers the
+       whole viewport (inset:0 above is untouched). */
+    padding-left: calc(var(--cheese-sidebar-w, 220px) + 24px);
 }
 
 .pgn-modal {

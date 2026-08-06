@@ -5,7 +5,17 @@
    style.css so page-specific rules can still override where needed.
    Does NOT include the 220px content-offset rule — each page handles
    that offset itself (varies: some use .app-container padding, others
-   bake it into their own content-container class). */
+   bake it into their own content-container class).
+
+   --cheese-sidebar-w is the one canonical value for the sidebar's width:
+   the source of truth for .left-nav's own width below, and also read by
+   assets/css/cheese-dialogs.css (and the .pgn-modal-overlay/.tr-modal-overlay
+   rules in pages that predate it) so large dialogs center themselves within
+   the workspace to the right of the sidebar instead of the full viewport —
+   see the comment on .cheese-dialog-overlay for why. */
+:root {
+    --cheese-sidebar-w: 220px;
+}
 
 /* =====================
    LEFT NAVIGATION SIDEBAR
@@ -15,7 +25,7 @@
     position: fixed;
     left: 0;
     top: 0;
-    width: 220px;
+    width: var(--cheese-sidebar-w);
     height: 100vh;
     background: rgba(12, 16, 28, 0.72);
     backdrop-filter: blur(28px) saturate(135%);
