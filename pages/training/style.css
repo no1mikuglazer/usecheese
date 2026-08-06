@@ -1054,13 +1054,13 @@ body{
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%) translateY(12px);
-    background: rgba(20,26,45,0.97);
+    background: #000;
     color: rgba(255,255,255,0.92);
     font-size: 13px;
     font-weight: 600;
     font-family: Arial, sans-serif;
     padding: 9px 18px;
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid rgba(255,255,255,0.12);
     box-shadow: 0 4px 20px rgba(0,0,0,0.45);
     white-space: nowrap;
@@ -1111,11 +1111,10 @@ body{
     display: flex;
     flex-direction: column;
     z-index: 500;
-    border-radius: 10px;
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.12);
-    background: rgba(15,20,35,0.97);
-    backdrop-filter: blur(14px);
+    background: #000;
 }
 
 .promotion-piece {
@@ -1129,8 +1128,6 @@ body{
 }
 
 .promotion-piece:hover { background: rgba(255,255,255,0.14); transform: scale(1.06); }
-.promotion-piece:first-child { border-radius: 10px 10px 0 0; }
-.promotion-piece:last-child  { border-radius: 0 0 10px 10px; }
 .promotion-piece + .promotion-piece { border-top: 1px solid rgba(255,255,255,0.07); }
 
 /* =====================
@@ -1286,11 +1283,9 @@ body{
 .pgn-modal {
     width: 100%;
     max-width: 460px;
-    background: rgba(15,20,35,0.96);
-    backdrop-filter: blur(20px) saturate(130%);
-    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    background: #000;
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px;
+    border-radius: 0;
     box-shadow: 0 24px 60px rgba(0,0,0,0.55),
                 inset 0 1px 0 rgba(255,255,255,0.06);
     padding: 20px 22px 22px 22px;
@@ -1316,7 +1311,7 @@ body{
     color: rgba(255,255,255,0.5);
     cursor: pointer;
     padding: 4px;
-    border-radius: 8px;
+    border-radius: 0;
     display: flex;
     transition: background 0.15s, color 0.15s;
 }
@@ -1346,7 +1341,7 @@ body{
     color: #fff;
     background: rgba(8,11,18,0.85);
     border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 10px;
+    border-radius: 0;
     outline: none;
     transition: border-color 0.16s, background 0.16s;
 }
@@ -1372,7 +1367,7 @@ body{
     font-size: 13px;
     font-weight: 600;
     font-family: Arial, sans-serif;
-    border-radius: 9px;
+    border-radius: 0;
     border: 1px solid transparent;
     cursor: pointer;
     transition: background 0.16s, border-color 0.16s, color 0.16s;
@@ -1600,9 +1595,9 @@ body{
     width: min(92vw, 420px);
     padding: 28px 26px 24px;
     text-align: center;
-    background: rgba(15, 19, 27, 0.97);
+    background: #000;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 18px;
+    border-radius: 0;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
     animation: trModalPop 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -1636,7 +1631,7 @@ body{
 .tr-modal-pfp {
     width: 52px;
     height: 52px;
-    border-radius: 12px;
+    border-radius: 0;
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.14);
     background-size: cover;
@@ -1667,7 +1662,7 @@ body{
 .tr-modal-btn {
     flex: 1;
     padding: 12px;
-    border-radius: 11px;
+    border-radius: 0;
     font-size: 14px;
     font-weight: 700;
     font-family: Arial, sans-serif;
