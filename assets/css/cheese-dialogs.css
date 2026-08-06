@@ -54,6 +54,12 @@
        it shrinks and scrolls internally instead of clipping off-screen. */
     max-height: calc(100vh - 48px);
     overflow-y: auto;
+    /* Lines the dialog up with the board behind it rather than with the
+       whole board+panel group. justify-content:center centres this box's
+       MARGIN box, so a right margin moves the visible box left by half the
+       margin — see --cheese-dialog-board-shift in assets/css/board-layout.css
+       for the derivation. Defaults to 0 on pages without that stylesheet. */
+    margin-right: var(--cheese-dialog-board-shift, 0px);
     background: #000;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 0;

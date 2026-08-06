@@ -20,9 +20,40 @@
     --sidebar-w: clamp(320px, 27vw, 600px);
     --board-area-h: calc(var(--board-size) + (var(--player-h) * 2) + (var(--row-gap) * 2));
 
+    /* How far left a centered blocking dialog must sit to line up with the
+       BOARD rather than with the board+panel group as a whole.
+       .app-container centers the whole group (board-area + panel), so the
+       board's own centre sits to the LEFT of that by half the width of
+       everything flanking it. Consumed as a margin-right by every large
+       dialog (see assets/css/cheese-dialogs.css); justify-content:center
+       centres a flex item's MARGIN box, so the visible box moves left by
+       half the margin — hence the full width here, not half of it.
+
+       This default is the no-eval-bar layout (Training): the board's only
+       right-hand neighbour is the panel, one gap away.
+       Pages without this stylesheet fall back to 0 and simply stay centred
+       on their own content area. */
+    --cheese-dialog-board-shift: calc(var(--sidebar-w) + var(--gap-md));
+
     /* Single place to change right-click annotation color across every
        board page (Analysis, Training, Puzzles) — see assets/js/board-annotations.js. */
     --board-annotation-color: 255, 152, 0; /* orange, as an R,G,B triplet for rgba() */
+}
+
+/* Analysis-style layout: an eval bar sits inside .board-area to the LEFT of
+   the board, which pushes the board right within the group and cancels part
+   of the shift — (--sidebar-w - --eval-w) instead. Keyed off the element
+   actually being present rather than off the page, so a page gains the
+   correct value purely by having (or not having) an eval bar. */
+:root:has(.eval-container) {
+    --cheese-dialog-board-shift: calc(var(--sidebar-w) - var(--eval-w));
+}
+
+/* Below this width the board+panel group is tight enough that shifting a
+   dialog onto the board would start squeezing it against the sidebar, so
+   the shift is dropped and dialogs simply centre on the workspace. */
+@media (max-width: 1100px) {
+    :root, :root:has(.eval-container) { --cheese-dialog-board-shift: 0px; }
 }
 
 /* APP CONTAINER */

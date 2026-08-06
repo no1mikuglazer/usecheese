@@ -1294,6 +1294,10 @@ body{
        and scrolls internally instead of clipping off-screen. */
     max-height: calc(100vh - 48px);
     overflow-y: auto;
+    /* Lines this modal up with the board behind it, same as
+       .cheese-dialog — see --cheese-dialog-board-shift in
+       assets/css/board-layout.css. */
+    margin-right: var(--cheese-dialog-board-shift, 0px);
     background: #000;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 0;
@@ -1615,6 +1619,10 @@ body{
        and scrolls internally instead of clipping off-screen. */
     max-height: calc(100vh - 40px);
     overflow-y: auto;
+    /* Lines the Game Over modal up with the board behind it, same as
+       .cheese-dialog — see --cheese-dialog-board-shift in
+       assets/css/board-layout.css. */
+    margin-right: var(--cheese-dialog-board-shift, 0px);
     padding: 28px 26px 24px;
     text-align: center;
     background: #000;
