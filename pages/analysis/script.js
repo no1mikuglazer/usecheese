@@ -852,8 +852,14 @@ newGameBtn.addEventListener("click", () => {
 
 // delete game
 
-deleteGameBtn.addEventListener("click", () => {
-  if (!confirm("Delete current analysis?")) return;
+deleteGameBtn.addEventListener("click", async () => {
+  const ok = await cheeseDialogs.showConfirm("", {
+    title: "Delete current analysis?",
+    confirmLabel: "Delete",
+    cancelLabel: "Cancel",
+    danger: true,
+  });
+  if (!ok) return;
 
   customPositionName = null;
 
@@ -909,10 +915,14 @@ let customPositionName = null;
 
 const editNameBtn = document.getElementById("editNameBtn");
 if (editNameBtn) {
-  editNameBtn.addEventListener("click", () => {
+  editNameBtn.addEventListener("click", async () => {
     const posLabel = document.getElementById("apPositionLabel");
     const current = posLabel ? posLabel.textContent : "Starting Position";
-    const newName = prompt("Rename analysis:", current);
+    const newName = await cheeseDialogs.showPrompt("", {
+      title: "Rename analysis",
+      defaultValue: current,
+      confirmLabel: "Rename",
+    });
     if (newName === null) return; // cancelled
     const trimmed = newName.trim() || "Starting Position";
     customPositionName = trimmed;

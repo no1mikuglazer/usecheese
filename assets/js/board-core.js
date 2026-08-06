@@ -826,7 +826,13 @@ function formatSavedDate(iso) {
 }
 
 // Save the current analysis: prompt for a name, append, never overwrite.
-function saveCurrentAnalysis() {
+//
+// Pages that load assets/js/cheese-dialogs.js (currently only Analysis; see
+// that file's header) get the Cheese-styled input dialog via
+// window.cheeseDialogs. Training doesn't load it, so window.cheeseDialogs
+// is undefined there and this falls back to the native prompt() exactly as
+// before — this function's behavior on Training is completely unchanged.
+async function saveCurrentAnalysis() {
   const tip = mainlineTip();
   if (tip === root) {
     showToast("Make a move before saving");
@@ -835,7 +841,13 @@ function saveCurrentAnalysis() {
 
   const pgn = generatePGNFromNode(tip);
   const suggested = customPositionName || "Analysis";
-  const input = prompt("Name this analysis:", suggested);
+  const input = window.cheeseDialogs
+    ? await window.cheeseDialogs.showPrompt("Name this analysis:", {
+        title: "Save analysis",
+        defaultValue: suggested,
+        confirmLabel: "Save",
+      })
+    : prompt("Name this analysis:", suggested);
   if (input === null) return; // cancelled
   const name = input.trim() || suggested;
 

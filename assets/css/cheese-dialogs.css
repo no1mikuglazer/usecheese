@@ -1,0 +1,142 @@
+/* Cheese — shared dialog/modal system (blocking alert/confirm/prompt
+   replacements). Only linked from pages/analysis/index.html for now — see
+   assets/js/cheese-dialogs.js's file header — but kept in assets/ rather
+   than pages/analysis/ so it can be linked from other pages later without
+   moving anything.
+
+   Visual language matches the toast notification and the Import PGN modal
+   already established on the Analysis page: black background, sharp
+   corners, minimal borders. Not literally sharing those CSS classes (this
+   file is standalone) so this system can be reused elsewhere without
+   dragging in anything Analysis-specific, and so the already-working PGN
+   modal is never at risk of being touched by changes here. */
+
+.cheese-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.cheese-dialog-overlay.cheese-dialog-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.cheese-dialog {
+    width: 100%;
+    max-width: 380px;
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 0;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+    padding: 20px 22px 22px 22px;
+    color: rgba(255,255,255,0.92);
+    transform: translateY(6px);
+    transition: transform 0.15s ease;
+}
+
+.cheese-dialog-open .cheese-dialog {
+    transform: translateY(0);
+}
+
+.cheese-dialog-title {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.2px;
+    margin-bottom: 8px;
+}
+
+.cheese-dialog-message {
+    font-size: 13.5px;
+    font-family: Arial, sans-serif;
+    line-height: 1.55;
+    color: rgba(255,255,255,0.72);
+    margin-bottom: 16px;
+    white-space: pre-line;
+}
+
+.cheese-dialog-input {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 0;
+    outline: none;
+    margin-bottom: 18px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.cheese-dialog-input:focus {
+    border-color: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.09);
+}
+
+.cheese-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.cheese-dialog-btn {
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: Arial, sans-serif;
+    border-radius: 0;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.cheese-dialog-btn-ghost {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+}
+.cheese-dialog-btn-ghost:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.cheese-dialog-btn-primary {
+    background: rgba(255,255,255,0.92);
+    color: #0b0f1a;
+}
+.cheese-dialog-btn-primary:hover {
+    background: #fff;
+}
+
+/* Reuses the same red already established for destructive actions
+   elsewhere in Analysis (see .ap-action-btn-danger in pages/analysis/style.css)
+   rather than inventing a new danger color. */
+.cheese-dialog-btn-danger {
+    background: rgba(180,40,40,0.18);
+    border-color: rgba(255,120,120,0.35);
+    color: rgba(255,140,140,1);
+}
+.cheese-dialog-btn-danger:hover {
+    background: rgba(180,40,40,0.32);
+    color: #fff;
+}
+
+.cheese-dialog-btn:focus-visible,
+.cheese-dialog-input:focus-visible {
+    outline: 2px solid rgba(255,255,255,0.5);
+    outline-offset: 2px;
+}
