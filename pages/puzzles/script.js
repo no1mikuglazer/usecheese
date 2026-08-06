@@ -160,7 +160,6 @@ const statusEl = document.getElementById("pzStatus");
 const statusTitleEl = document.getElementById("pzStatusTitle");
 const statusSubEl = document.getElementById("pzStatusSub");
 const ratingEl = document.getElementById("pzRating");
-const themesEl = document.getElementById("pzThemes");
 const totalCountEl = document.getElementById("pzTotalCount");
 const minRatingInput = document.getElementById("pzMinRating");
 const maxRatingInput = document.getElementById("pzMaxRating");
@@ -434,23 +433,6 @@ function updateSessionDisplay() {
   streakCountEl.textContent = String(session.streak);
 }
 
-// Themes name the tactic, so they stay hidden until the puzzle is over.
-function renderThemes(reveal) {
-  themesEl.innerHTML = "";
-  themesEl.classList.toggle("pz-themes-visible", Boolean(reveal));
-  if (!reveal || !currentPuzzle || !currentPuzzle.themes) return;
-
-  currentPuzzle.themes.forEach((theme) => {
-    const chip = document.createElement("span");
-    chip.className = "pz-theme";
-    // API themes are camelCase ("hangingPiece") — space them out for display.
-    chip.textContent = theme
-      .replace(/([a-z])([A-Z0-9])/g, "$1 $2")
-      .replace(/^./, (c) => c.toUpperCase());
-    themesEl.appendChild(chip);
-  });
-}
-
 function updatePlayerBars() {
   const solverIsWhite = solverColor === "w";
   solverNameEl.textContent = solverIsWhite ? "White" : "Black";
@@ -674,7 +656,6 @@ function onPuzzleSolved() {
     setStatus("pz-status-clean", "Puzzle solved", "Clean solve — nice");
   }
 
-  renderThemes(true);
   setControlsBusy(false); // also disables Hint, since the state is no longer SOLVING
 }
 
@@ -736,7 +717,6 @@ function setupPuzzle(puzzle) {
   renderBoard(true);
 
   ratingEl.textContent = String(puzzle.rating);
-  renderThemes(false);
 
   puzzleState = PUZZLE_STATE.SOLVING;
   setStatus("pz-status-idle", "Watch the move", "Your opponent is playing…");

@@ -327,30 +327,6 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
-.pz-themes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 2px;
-    /* Themes are a solution spoiler, so they stay hidden until the puzzle is
-       finished — revealed by adding .pz-themes-visible. */
-    display: none;
-}
-
-.pz-themes.pz-themes-visible { display: flex; }
-
-.pz-theme {
-    font-size: clamp(10px, 0.72vw, 12px);
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    padding: 4px 9px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    color: rgba(233, 238, 246, 0.78);
-    white-space: nowrap;
-}
-
 /* SECTIONS */
 
 .pz-section {
