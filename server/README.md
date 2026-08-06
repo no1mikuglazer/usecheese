@@ -79,6 +79,57 @@ That correlation only holds because the table is built by a single ordered
 INSERT. If puzzles are ever appended incrementally, rebuild with a full
 reimport rather than patching rows in.
 
+## Deriving a smaller database
+
+The imported database is ~1GB, which does not fit a storage-constrained volume
+(Railway's free tier caps at 500MB). This derives a smaller one from it:
+
+```bash
+npm run shrink:puzzles
+```
+
+Options:
+
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--source <path>` | `./data/cheese.sqlite` | Database to sample from |
+| `--target <path>` | `./data/cheese.small.sqlite` | Output database |
+| `--cap-per-band <n>` | `70000` | Max puzzles kept per rating band |
+| `--band-size <n>` | `100` | Width of a rating band |
+
+With the defaults:
+
+| | rows | rating span | size |
+| --- | --- | --- | --- |
+| `cheese.sqlite` | 5,826,593 | 399–3327 | 1014 MB |
+| `cheese.small.sqlite` | 1,693,140 | 399–3327 | 296 MB |
+
+It reads rows already on disk in SQLite rather than re-parsing the parquet, so
+it finishes in seconds rather than minutes.
+
+### Why it samples per rating band, not uniformly
+
+Puzzle ratings are heavily concentrated in the middle. Uniformly downsampling
+the whole table would let those dense mid-ratings crowd out the rare extremes,
+and a band that ends up empty is not a cosmetic loss: a difficulty preset
+covering it would start returning `no_puzzles_in_range` instead of a puzzle.
+
+Capping *per band* instead means dense bands get trimmed while sparse ones pass
+through untouched, so every difficulty level stays represented. Note above that
+the rating span is identical before and after.
+
+### It preserves the ordering the query path depends on
+
+The shrink writes its final table with a single `INSERT ... ORDER BY rating ASC`,
+exactly as the import does — so the id/rating correlation described in *Why the
+import sorts by rating* holds here too, and the API needs no changes to serve
+this database. Ids come out contiguous (1..N) with no rating inversions.
+
+Any future change to this script must keep that single ordered INSERT. Sampling
+into the final table in band order, or appending bands incrementally, would
+break the correlation silently: queries would still return rows, just the wrong
+ones for the requested rating range.
+
 ## Running
 
 ```bash
@@ -130,5 +181,16 @@ Runs on any host that provides Node plus a **persistent volume** (the SQLite
 file must survive redeploys). Set `DB_PATH` to a path on that volume, set
 `CORS_ORIGINS` to the real site origin, and leave `PORT` to the host.
 
-Because the database is too large to commit, build it on the host: upload the
-parquet to the volume once, then run the import command above there.
+The database is too large to commit, so it is built locally and uploaded:
+
+1. Run the import to build `cheese.sqlite` (~1GB).
+2. Run the shrink to derive `cheese.small.sqlite` (~296MB).
+3. Upload **only the small database** to the volume.
+4. Point `DB_PATH` at it, e.g. `DB_PATH=/data/cheese.small.sqlite`.
+
+Do not skip the shrink and upload the full database instead — at ~1GB it does
+not fit a 500MB volume, and the failure surfaces as a partial upload or an
+out-of-space error rather than anything that names the real cause.
+
+Both files are reproducible from the parquet by re-running the two commands
+above, which is the recovery path if the volume is ever lost.

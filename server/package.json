@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "import:puzzles": "node scripts/import-puzzles.js"
+    "import:puzzles": "node scripts/import-puzzles.js",
+    "shrink:puzzles": "node scripts/shrink-database.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",

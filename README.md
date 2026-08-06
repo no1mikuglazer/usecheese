@@ -10,7 +10,7 @@
 
 **Cheese** is an all-in-one, desktop-focused chess study platform. It brings together everything you need to improve your game in one calm, cohesive workspace — analyse your games with a world-class engine, study openings, browse the greatest games ever played, train tactics, and sharpen your skills against Stockfish.
 
-There is no account to create. The website itself is fully static and every board feature — analysis, openings, the database, playing Stockfish — runs entirely in your browser. The Puzzles page additionally talks to the Cheese API, a small backend that serves positions from a database of 5.8 million tactics puzzles (see [`server/`](server/)).
+There is no account to create. The website itself is fully static and every board feature — analysis, openings, the database, playing Stockfish — runs entirely in your browser. The Puzzles page additionally talks to the Cheese API, a small backend that serves positions from a database of 1.7 million tactics puzzles, sampled across every difficulty from the full 5.8 million–puzzle Lichess import (see [`server/`](server/)).
 
 ---
 
@@ -21,7 +21,7 @@ Everything below is available in **Version 1.3**.
 | Feature | Description |
 | --- | --- |
 | **Stockfish 18 Analysis** | Analyse any position with the Stockfish 18 engine, including an evaluation bar and engine lines. |
-| **Puzzle Trainer** | Train tactics against a database of 5.8 million puzzles, filtered by difficulty, with hints and session tracking. |
+| **Puzzle Trainer** | Train tactics against a database of 1.7 million puzzles, filtered by difficulty, with hints and session tracking. |
 | **Opening Explorer** | Browse openings by ECO code and hand off any line straight into Analysis. |
 | **Play Against Stockfish** | Play full games versus the engine — choose your colour, with automatic board orientation and turn enforcement. |
 | **Master Game Database** | Explore curated collections of games from legendary players, parsed dynamically from PGN. |
@@ -93,7 +93,7 @@ _Screenshots will be added here._
 | **Stockfish 18** | Chess engine (WebAssembly, runs in a Web Worker) |
 | **PGN parsing** | Reading and splitting master games and imports |
 | **Node.js + Express** | Backend API (Puzzles only) |
-| **SQLite** | Puzzle datastore (5.8M rows) |
+| **SQLite** | Puzzle datastore (1.7M rows served, sampled from a 5.8M import) |
 
 ---
 
