@@ -1008,18 +1008,23 @@ body{
    TOAST NOTIFICATION
    ===================== */
 
+/* top/left default to an approximate viewport-relative fallback position
+   (used only if board-core.js's positionToastNearPlayerBar() can't find
+   the player-bar elements it measures); in normal operation it overrides
+   both with the actual midpoint between the player name and the clock,
+   recomputed fresh every time a toast is shown. */
 .ap-toast {
     position: fixed;
-    bottom: 80px;
+    top: 90%;
     left: 50%;
-    transform: translateX(-50%) translateY(12px);
-    background: rgba(20,26,45,0.97);
+    transform: translate(-50%, -50%) translateY(12px);
+    background: #000;
     color: rgba(255,255,255,0.92);
     font-size: 13px;
     font-weight: 600;
     font-family: Arial, sans-serif;
     padding: 9px 18px;
-    border-radius: 10px;
+    border-radius: 0;
     border: 1px solid rgba(255,255,255,0.12);
     box-shadow: 0 4px 20px rgba(0,0,0,0.45);
     white-space: nowrap;
@@ -1031,7 +1036,7 @@ body{
 
 .ap-toast-visible {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translate(-50%, -50%) translateY(0);
 }
 /* =====================
    PIECE ANIMATIONS

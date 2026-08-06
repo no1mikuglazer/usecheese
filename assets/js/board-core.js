@@ -652,11 +652,35 @@ function showToast(msg) {
     document.body.appendChild(toast);
   }
   toast.textContent = msg;
+  positionToastNearPlayerBar(toast);
   toast.classList.add("ap-toast-visible");
   clearTimeout(toast._hideTimer);
   toast._hideTimer = setTimeout(() => {
     toast.classList.remove("ap-toast-visible");
   }, 2200);
+}
+
+// If the page has a #apToastAnchor player bar (a `.player` with the usual
+// `.player-left` name section and `.player-clock`), center the toast in the
+// gap between them instead of the default viewport-centered position — see
+// the id's placement in pages/analysis/index.html for why only that page
+// has it. Recomputed from the live rendered layout on every call, so it
+// tracks whatever the current board size/viewport actually is; pages
+// without the anchor (unaffected) just fall through to the CSS default.
+function positionToastNearPlayerBar(toast) {
+  const anchor = document.getElementById("apToastAnchor");
+  const left = anchor && anchor.querySelector(".player-left");
+  const clock = anchor && anchor.querySelector(".player-clock");
+  if (!left || !clock) {
+    toast.style.top = "";
+    toast.style.left = "";
+    return;
+  }
+  const leftRect = left.getBoundingClientRect();
+  const clockRect = clock.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  toast.style.left = (leftRect.right + clockRect.left) / 2 + "px";
+  toast.style.top = anchorRect.top + anchorRect.height / 2 + "px";
 }
 
 // ── Opening Explorer → Analysis integration (shared parsing) ────────────────

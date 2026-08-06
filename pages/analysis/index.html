@@ -282,7 +282,12 @@
 
         <!-- WHITE PLAYER -->
 
-        <div class="player white-player">
+        <!-- id="apToastAnchor": Analysis never flips its board (see
+             pages/analysis/script.js), so this bar is always the bottom one.
+             board-core.js's showToast() looks for this id to center toast
+             notifications in the gap between the player name and the clock
+             instead of the page-viewport center. -->
+        <div class="player white-player" id="apToastAnchor">
           <div class="player-left">
             <div class="player-pfp white-pfp"></div>
 
