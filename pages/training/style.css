@@ -1111,10 +1111,12 @@ body{
     display: flex;
     flex-direction: column;
     z-index: 500;
-    border-radius: 0;
+    border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,255,255,0.12);
-    background: #000;
+    background: rgba(20, 20, 22, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
 .promotion-piece {
@@ -1128,6 +1130,8 @@ body{
 }
 
 .promotion-piece:hover { background: rgba(255,255,255,0.14); transform: scale(1.06); }
+.promotion-piece:first-child { border-radius: 10px 10px 0 0; }
+.promotion-piece:last-child  { border-radius: 0 0 10px 10px; }
 .promotion-piece + .promotion-piece { border-top: 1px solid rgba(255,255,255,0.07); }
 
 /* =====================
@@ -1298,9 +1302,11 @@ body{
        .cheese-dialog — see --cheese-dialog-board-shift in
        assets/css/board-layout.css. */
     margin-right: var(--cheese-dialog-board-shift, 0px);
-    background: #000;
+    background: rgba(20, 20, 22, 0.82);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 0;
+    border-radius: 16px;
     box-shadow: 0 24px 60px rgba(0,0,0,0.55),
                 inset 0 1px 0 rgba(255,255,255,0.06);
     padding: 20px 22px 22px 22px;
@@ -1326,7 +1332,7 @@ body{
     color: rgba(255,255,255,0.5);
     cursor: pointer;
     padding: 4px;
-    border-radius: 0;
+    border-radius: 8px;
     display: flex;
     transition: background 0.15s, color 0.15s;
 }
@@ -1354,9 +1360,9 @@ body{
     font-family: "Courier New", monospace;
     line-height: 1.6;
     color: #fff;
-    background: rgba(8,11,18,0.85);
+    background: rgba(10,10,11,0.85);
     border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 0;
+    border-radius: 10px;
     outline: none;
     transition: border-color 0.16s, background 0.16s;
 }
@@ -1367,7 +1373,7 @@ body{
 
 .pgn-modal-textarea:focus {
     border-color: rgba(255,255,255,0.3);
-    background: rgba(10,14,22,0.92);
+    background: rgba(12,12,13,0.92);
 }
 
 .pgn-modal-actions {
@@ -1382,7 +1388,7 @@ body{
     font-size: 13px;
     font-weight: 600;
     font-family: Arial, sans-serif;
-    border-radius: 0;
+    border-radius: 9px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: background 0.16s, border-color 0.16s, color 0.16s;
@@ -1625,9 +1631,11 @@ body{
     margin-right: var(--cheese-dialog-board-shift, 0px);
     padding: 28px 26px 24px;
     text-align: center;
-    background: #000;
+    background: rgba(20, 20, 22, 0.82);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 0;
+    border-radius: 18px;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
     animation: trModalPop 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
@@ -1661,7 +1669,7 @@ body{
 .tr-modal-pfp {
     width: 52px;
     height: 52px;
-    border-radius: 0;
+    border-radius: 12px;
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.14);
     background-size: cover;
@@ -1692,7 +1700,7 @@ body{
 .tr-modal-btn {
     flex: 1;
     padding: 12px;
-    border-radius: 0;
+    border-radius: 11px;
     font-size: 14px;
     font-weight: 700;
     font-family: Arial, sans-serif;

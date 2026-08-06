@@ -4,12 +4,16 @@
    header — but kept in assets/ rather than a page directory so it can be
    linked from other pages later without moving anything.
 
-   Visual language matches the toast notification and the Import PGN modal
-   already established on the Analysis page: black background, sharp
-   corners, minimal borders. Not literally sharing those CSS classes (this
-   file is standalone) so this system can be reused elsewhere without
-   dragging in anything Analysis-specific, and so the already-working PGN
-   modal is never at risk of being touched by changes here. */
+   Visual language matches the Import PGN / Game Over modals: dark-neutral
+   (NOT the old dark-blue) glassmorphism — translucent background, backdrop
+   blur, rounded corners. Deliberately NOT shared with the toast, which
+   keeps its own sharp/opaque/high-contrast look on purpose (see each
+   page's .ap-toast) since toasts are meant to read as more urgent/attention-
+   grabbing than a considered dialog. Not literally sharing CSS classes with
+   the PGN/Game Over modals (this file is standalone) so this system can be
+   reused elsewhere without dragging in anything Analysis-specific, and so
+   those already-working modals are never at risk of being touched by
+   changes here — they're kept visually consistent by hand instead. */
 
 .cheese-dialog-overlay {
     position: fixed;
@@ -60,9 +64,11 @@
        margin — see --cheese-dialog-board-shift in assets/css/board-layout.css
        for the derivation. Defaults to 0 on pages without that stylesheet. */
     margin-right: var(--cheese-dialog-board-shift, 0px);
-    background: #000;
+    background: rgba(20, 20, 22, 0.82);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 0;
+    border-radius: 14px;
     box-shadow: 0 24px 60px rgba(0,0,0,0.55);
     padding: 20px 22px 22px 22px;
     color: rgba(255,255,255,0.92);
@@ -100,7 +106,7 @@
     color: #fff;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.16);
-    border-radius: 0;
+    border-radius: 8px;
     outline: none;
     margin-bottom: 18px;
     box-sizing: border-box;
@@ -123,7 +129,7 @@
     font-size: 13px;
     font-weight: 600;
     font-family: Arial, sans-serif;
-    border-radius: 0;
+    border-radius: 8px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;

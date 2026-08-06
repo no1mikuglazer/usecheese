@@ -178,9 +178,11 @@ body {
 .promotion-popup {
     position: fixed;
     z-index: 1200;
-    background: #000;
+    background: rgba(20, 20, 22, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 0;
+    border-radius: 10px;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
     overflow: hidden;
     display: flex;
@@ -197,6 +199,8 @@ body {
 }
 
 .promotion-piece:hover { background: rgba(255, 255, 255, 0.14); transform: scale(1.06); }
+.promotion-piece:first-child { border-radius: 10px 10px 0 0; }
+.promotion-piece:last-child  { border-radius: 0 0 10px 10px; }
 .promotion-piece + .promotion-piece { border-top: 1px solid rgba(255, 255, 255, 0.07); }
 
 /* =====================
