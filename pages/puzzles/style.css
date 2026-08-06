@@ -178,9 +178,9 @@ body {
 .promotion-popup {
     position: fixed;
     z-index: 1200;
-    background: rgba(16, 21, 36, 0.97);
+    background: #000;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
+    border-radius: 0;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
     overflow: hidden;
     display: flex;
@@ -539,13 +539,13 @@ body {
     bottom: 28px;
     left: 50%;
     transform: translateX(-50%) translateY(12px);
-    background: rgba(16, 21, 36, 0.95);
+    background: #000;
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: #eef1f8;
     font-size: 14px;
     font-weight: 600;
     padding: 11px 20px;
-    border-radius: 10px;
+    border-radius: 0;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     opacity: 0;
     pointer-events: none;
