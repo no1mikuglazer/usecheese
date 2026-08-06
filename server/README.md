@@ -4,8 +4,9 @@ Backend API for Cheese. Currently serves the puzzle database; structured so
 future features (accounts, cloud-synced saves) can be added as new modules
 without rearranging anything.
 
-The frontend remains a separate, fully static site — it calls this API over
-`fetch()`. This service does not serve the website itself.
+The frontend remains a separate, fully static site (hosted on Cloudflare
+Pages) — it calls this API over `fetch()`. This service does not serve the
+website itself; it runs on Railway (see "Deployment notes" below).
 
 ---
 

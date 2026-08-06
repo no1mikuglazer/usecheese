@@ -44,7 +44,9 @@ Everything below is available in **Version 1.3**.
 | `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
 
 The website and the API deploy independently. Only the Puzzles page depends on
-the API; every other page works without it.
+the API; every other page works without it. The website is hosted on
+Cloudflare Pages; the API runs on Railway (see
+[`server/README.md`](server/README.md)).
 
 ---
 
