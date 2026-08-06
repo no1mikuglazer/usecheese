@@ -21,6 +21,11 @@
    (already-rotated) page, so it is correct in both orientations without any
    flip-aware arithmetic here either.
 
+   The one place screen coords must cross INTO this local space is the live
+   drag preview's moving endpoint, and it goes through the SVG's own
+   getScreenCTM().inverse() — the actual transform — rather than a
+   board-rect fraction, which silently point-reflects on a flipped board.
+
    ── Coordinates ─────────────────────────────────────────────────────────────
    Annotations are stored as chess squares ("e4") and square pairs
    ("e2-e4") — never pixels. The SVG's viewBox is a fixed 8x8 grid (one unit
@@ -80,14 +85,34 @@
     // overlay must never intercept clicks/drags meant for pieces or squares.
     svg.style.pointerEvents = "none";
 
+    // ── Arrowhead marker ────────────────────────────────────────────────────
+    // The triangle is drawn in a 10x10 marker viewBox: base spanning (0,0)-(0,10),
+    // tip at (10,5). Its centroid along the forward axis is therefore x = 10/3.
+    //
+    // markerUnits="userSpaceOnUse" (rather than the default "strokeWidth")
+    // makes markerWidth/markerHeight mean *board squares* directly, so the
+    // arrowhead's real size is stated here in the same units as everything
+    // else in this file instead of depending on the CSS stroke-width. That is
+    // what lets the geometry below be derived rather than tuned.
+    //
+    // refX/refY name the point of the marker that gets placed at the line's
+    // endpoint. Pinning it to the triangle's CENTROID means: put the line's
+    // endpoint at the destination square's center, and the arrowhead's visual
+    // center lands on that center by construction — no head inset, no
+    // compensating offset, at any board size or angle.
+    const ARROWHEAD_LENGTH = 0.46; // squares, along the arrow's axis
+    const ARROWHEAD_WIDTH = 0.46; // squares, across it
+    const ARROWHEAD_CENTROID_X = 10 / 3; // marker-viewBox units
+
     const defs = document.createElementNS(svg.namespaceURI, "defs");
     const marker = document.createElementNS(svg.namespaceURI, "marker");
     marker.setAttribute("id", arrowheadId);
     marker.setAttribute("viewBox", "0 0 10 10");
-    marker.setAttribute("refX", "8.2");
+    marker.setAttribute("markerUnits", "userSpaceOnUse");
+    marker.setAttribute("refX", String(ARROWHEAD_CENTROID_X));
     marker.setAttribute("refY", "5");
-    marker.setAttribute("markerWidth", "4.2");
-    marker.setAttribute("markerHeight", "4.2");
+    marker.setAttribute("markerWidth", String(ARROWHEAD_LENGTH));
+    marker.setAttribute("markerHeight", String(ARROWHEAD_WIDTH));
     marker.setAttribute("orient", "auto-start-reverse");
     const arrowheadPath = document.createElementNS(svg.namespaceURI, "path");
     arrowheadPath.setAttribute("d", "M0,0 L10,5 L0,10 z");
@@ -110,16 +135,17 @@
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────
-    // Arrow endpoints are inset from the square centers: the tail so it does
-    // not appear to originate from inside the piece artwork, the head so the
-    // marker's own triangle lands just short of the destination square's
-    // center rather than overlapping it. HEAD_INSET is the inset of the raw
-    // line endpoint; the marker (viewBox 0 0 10 10, refX 8.2, markerWidth 4.2,
-    // rendered at the 0.11 stroke width) then draws its own tip a further
-    // ~0.083 units beyond that point, so the visible arrowhead tip actually
-    // lands about (HEAD_INSET - 0.083) units short of the destination center.
+    // The whole model, end to end:
+    //   1. source square -> its center      (squareCenter, pure file/rank math)
+    //   2. destination square -> its center (same)
+    //   3. the shaft runs between them, pulled back from the source center by
+    //      TAIL_INSET so it does not start on top of the piece artwork
+    //   4. the shaft ENDS exactly at the destination center, and the marker is
+    //      referenced at its centroid (see above), so the arrowhead's visual
+    //      center sits on that center
+    // There is deliberately no head inset: the head's placement is expressed
+    // once, in the marker's refX, instead of being split across two places.
     const TAIL_INSET = 0.28;
-    const HEAD_INSET = 0.1;
 
     function buildArrowLine(fromId, toId) {
       const from = squareCenter(fromId);
@@ -130,14 +156,12 @@
       const dy = to.y - from.y;
       const dist = Math.hypot(dx, dy);
       if (dist < 1e-6) return null;
-      const ux = dx / dist;
-      const uy = dy / dist;
 
       return {
-        x1: from.x + ux * TAIL_INSET,
-        y1: from.y + uy * TAIL_INSET,
-        x2: from.x + dx - ux * HEAD_INSET,
-        y2: from.y + dy - uy * HEAD_INSET,
+        x1: from.x + (dx / dist) * TAIL_INSET,
+        y1: from.y + (dy / dist) * TAIL_INSET,
+        x2: to.x,
+        y2: to.y,
       };
     }
 
@@ -213,20 +237,27 @@
       return square ? square.id : null;
     }
 
-    function boardLocalPoint(clientX, clientY) {
-      const rect = boardEl.getBoundingClientRect();
-      // The overlay's own viewBox is 0..8 regardless of screen size, so a
-      // fractional (not integer-snapped) live-preview point is just the
-      // pointer's position within the board scaled into that space. This is
-      // screen-space math for a LIVE preview only — never stored — so it
-      // does not need the flip-awareness the trail/glide code requires
-      // elsewhere; getBoundingClientRect already reflects the board's actual
-      // on-screen (post-rotation) box, and drawing a line to "wherever the
-      // mouse currently is on screen" is correct in that space either way.
-      return {
-        x: ((clientX - rect.left) / rect.width) * 8,
-        y: ((clientY - rect.top) / rect.height) * 8,
-      };
+    // Screen (client) coords -> the overlay's own viewBox coords.
+    //
+    // This MUST go through the SVG's real transform matrix, not a
+    // boardRect-fraction: the overlay is drawn in the board's LOCAL,
+    // pre-rotation space, while client coords are post-rotation screen space.
+    // On a flipped board (`.board-area.flipped .board { rotate(180deg) }`)
+    // those two spaces are point-reflected about the board's center, so
+    // rect-fraction math sent the live preview off toward an unrelated square.
+    // getScreenCTM().inverse() is exactly that conversion and stays correct
+    // for any transform the board picks up later.
+    //
+    // The matrix and the scratch point are captured once per gesture (see
+    // onMouseDown) and reused for every frame of the drag — one geometry read
+    // per gesture instead of one per pointer move, and no per-frame allocation.
+    const scratchPoint = svg.createSVGPoint();
+
+    function boardLocalPoint(clientX, clientY, inverseCTM) {
+      if (!inverseCTM) return null;
+      scratchPoint.x = clientX;
+      scratchPoint.y = clientY;
+      return scratchPoint.matrixTransform(inverseCTM);
     }
 
     function updatePreview(clientX, clientY) {
@@ -237,7 +268,8 @@
         previewRAF = null;
         if (!gesture || !pendingPreviewPoint) return;
         const from = squareCenter(gesture.startSquareId);
-        const pt = boardLocalPoint(pendingPreviewPoint.x, pendingPreviewPoint.y);
+        const pt = boardLocalPoint(pendingPreviewPoint.x, pendingPreviewPoint.y, gesture.inverseCTM);
+        if (!pt) return;
         if (!gesture.previewEl) {
           gesture.previewEl = document.createElementNS(svg.namespaceURI, "line");
           gesture.previewEl.setAttribute("class", "board-annotation-arrow board-annotation-arrow-preview");
@@ -296,11 +328,16 @@
       if (!squareId) return;
 
       e.preventDefault();
+      const ctm = svg.getScreenCTM();
       gesture = {
         startSquareId: squareId,
         startX: e.clientX,
         startY: e.clientY,
         previewEl: null,
+        // Captured once here, not per pointer move. Only the live preview
+        // uses it; the committed arrow comes from elementFromPoint, so even a
+        // resize mid-drag cannot make the stored annotation wrong.
+        inverseCTM: ctm ? ctm.inverse() : null,
       };
     }
 
