@@ -837,8 +837,14 @@ document.addEventListener("keydown", (event) => {
 
 // new game
 
-newGameBtn.addEventListener("click", () => {
-  if (!confirm("Start a new game?\nYour current game will be lost.")) return;
+newGameBtn.addEventListener("click", async () => {
+  const ok = await cheeseDialogs.showConfirm("Your current game will be lost.", {
+    title: "Start a new game?",
+    confirmLabel: "New Game",
+    cancelLabel: "Cancel",
+    danger: true,
+  });
+  if (!ok) return;
   resetAnalysisState();
   refreshUI();
   if (window.__trainingReturnToSelect) window.__trainingReturnToSelect();
@@ -869,10 +875,14 @@ let customPositionName = null;
 
 const editNameBtn = document.getElementById("editNameBtn");
 if (editNameBtn) {
-  editNameBtn.addEventListener("click", () => {
+  editNameBtn.addEventListener("click", async () => {
     const posLabel = document.getElementById("apPositionLabel");
     const current = posLabel ? posLabel.textContent : "Starting Position";
-    const newName = prompt("Rename analysis:", current);
+    const newName = await cheeseDialogs.showPrompt("", {
+      title: "Rename analysis",
+      defaultValue: current,
+      confirmLabel: "Rename",
+    });
     if (newName === null) return; // cancelled
     const trimmed = newName.trim() || "Starting Position";
     customPositionName = trimmed;
@@ -1209,9 +1219,15 @@ function trResetPlayers() {
 (function trResign() {
   const btn = document.getElementById("resignBtn");
   if (!btn) return;
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     if (!trGameActive) return;
-    if (!confirm("Are you sure you want to resign?")) return;
+    const ok = await cheeseDialogs.showConfirm("", {
+      title: "Are you sure you want to resign?",
+      confirmLabel: "Resign",
+      cancelLabel: "Cancel",
+      danger: true,
+    });
+    if (!ok) return;
     const winner = trPlayerColor === "w" ? "b" : "w"; // opponent wins
     trGameActive = false;
     trShowGameOver({
