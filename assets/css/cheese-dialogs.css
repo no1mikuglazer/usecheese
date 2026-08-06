@@ -35,6 +35,11 @@
 .cheese-dialog {
     width: 100%;
     max-width: 380px;
+    /* .cheese-dialog-overlay has padding:24px on every side, so this keeps
+       the dialog from ever growing past the viewport on a short window —
+       it shrinks and scrolls internally instead of clipping off-screen. */
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     background: #000;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 0;
