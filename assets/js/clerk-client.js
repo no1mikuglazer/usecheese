@@ -33,6 +33,46 @@ window.cheeseClerk = window.Clerk;
 window.cheeseClerkReady = window.Clerk.load().then(() => window.Clerk);
 
 // ── Nav auth block ──────────────────────────────────────────────────────
+// This is a multi-page static site with no client-side routing, so every
+// navigation is a full reload of static HTML that starts out signed-out by
+// default. Clerk.load() is a real, network-bound wait, so simply hiding
+// the block until it resolves (the previous version of this file) still
+// means every single page load pays that wait before showing anything.
+//
+// The fix is a last-known-result cache in localStorage: on every real
+// render, remember what was shown. On the NEXT page load, read that
+// synchronously (no network, no waiting) and paint it immediately, before
+// Clerk has even started resolving — then silently correct it once Clerk's
+// real answer comes in, which only produces a visible change on the rare
+// occasion the cached guess was stale (session expired, signed out in
+// another tab). First-ever visit has no cached guess yet, so it falls back
+// to the plain hidden-until-known behaviour.
+//
+// This is a display hint only, not a credential — it stores the same
+// name/avatar URL already rendered in the page every time someone is
+// signed in. It grants no access; Clerk's own session check below is what
+// actually decides and is always the final word.
+
+const AUTH_HINT_KEY = "cheeseAuthHint";
+
+function readAuthHint() {
+  try {
+    const raw = localStorage.getItem(AUTH_HINT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeAuthHint(hint) {
+  try {
+    localStorage.setItem(AUTH_HINT_KEY, JSON.stringify(hint));
+  } catch (e) {
+    // Private mode / quota exceeded — falls back to the plain
+    // hidden-until-Clerk-resolves path on the next load, same as before
+    // this existed.
+  }
+}
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
@@ -40,73 +80,81 @@ function escapeHtml(str) {
   }[c]));
 }
 
-function initNavAuthState(clerkInstance) {
-  const container = document.querySelector(".left-nav-auth");
-  if (!container) return; // Signup/Login pages have no sidebar
+const navAuthContainer = document.querySelector(".left-nav-auth");
 
-  // The signed-out markup is already correct (real Sign Up/Log In links) —
-  // captured once so a later Sign Out can restore it exactly, rather than
-  // this file re-generating it (and needing to guess this page's relative
-  // path depth to pages/signup//pages/login/).
-  const signedOutHTML = container.innerHTML;
+if (navAuthContainer) {
+  // The real, live signed-out markup baked into this page's HTML —
+  // captured immediately, before anything below touches the container.
+  const signedOutHTML = navAuthContainer.innerHTML;
 
-  // The container starts at opacity:0 (assets/css/nav.css /
-  // style.css — .left-nav-auth) so that on EVERY page load, whatever the
-  // real auth state turns out to be, it is never painted as the wrong
-  // state first. Clerk.load() takes a real, if usually brief, network
-  // round trip; without this a signed-in user would see the signed-out
-  // Sign Up/Log In buttons flash on every navigation, since each page is a
-  // full reload of static HTML that starts out signed-out by default.
-  function reveal() {
-    container.classList.add("left-nav-auth-ready");
-  }
-
-  function render() {
-    const user = clerkInstance.user;
-
-    if (!user) {
-      container.innerHTML = signedOutHTML;
-      reveal();
-      return;
-    }
-
-    const name = user.username || (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) || "Account";
-
-    // width/height attributes (not just the CSS rule) so the avatar is
-    // correctly sized even on a stale cached stylesheet from before this
-    // was added — HTML sizing attributes apply before any CSS is parsed.
-    // Not a link yet — there is no profile page to send it to until Stage 5.
-    container.innerHTML = `
+  // width/height attributes (not just the CSS rule) so the avatar is
+  // correctly sized even against a stale cached stylesheet from before
+  // .left-nav-account-avatar existed — HTML sizing attributes apply
+  // before any CSS is parsed.
+  // Not a link yet — there is no profile page to send it to until Stage 5.
+  function buildSignedInHTML(name, imageUrl) {
+    return `
       <div class="left-nav-account">
-        <img class="left-nav-account-avatar" width="24" height="24" src="${escapeHtml(user.imageUrl)}" alt="" />
+        <img class="left-nav-account-avatar" width="24" height="24" src="${escapeHtml(imageUrl)}" alt="" />
         <span class="left-nav-account-name">${escapeHtml(name)}</span>
       </div>
       <button type="button" class="left-nav-auth-btn left-nav-auth-btn-ghost left-nav-signout-btn">Sign Out</button>
     `;
+  }
 
-    const signOutBtn = container.querySelector(".left-nav-signout-btn");
-    if (signOutBtn) {
-      signOutBtn.addEventListener("click", () => clerkInstance.signOut());
-    }
+  function wireSignOutButton(clerkInstance) {
+    const btn = navAuthContainer.querySelector(".left-nav-signout-btn");
+    if (btn) btn.addEventListener("click", () => clerkInstance.signOut());
+  }
 
+  function reveal() {
+    navAuthContainer.classList.add("left-nav-auth-ready");
+  }
+
+  // ── Optimistic paint from the cached hint — synchronous, so this runs
+  // before Clerk.load() below has any chance to resolve.
+  const hint = readAuthHint();
+  if (hint) {
+    navAuthContainer.innerHTML = hint.signedIn
+      ? buildSignedInHTML(hint.name, hint.imageUrl)
+      : signedOutHTML;
+    // Not wired to Sign Out yet on this optimistic pass — clicking it
+    // before Clerk has loaded would call signOut() on nothing. The real
+    // render() below (which always runs, even when the hint matches)
+    // rewires it as part of producing the confirmed state.
     reveal();
   }
 
-  render();
-  clerkInstance.addListener(render);
-}
+  window.cheeseClerkReady
+    .then((clerkInstance) => {
+      function render() {
+        const user = clerkInstance.user;
 
-window.cheeseClerkReady
-  .then((clerkInstance) => initNavAuthState(clerkInstance))
-  .catch((err) => {
-    // Nav's baked-in HTML is already the safe signed-out default, so there
-    // is nothing to undo here — just don't let a Clerk outage look like a
-    // silent, unexplained failure in the console. Still reveal the
-    // container: initNavAuthState() never got to run its own reveal(), and
-    // .left-nav-auth starts at opacity:0 (see nav.css / style.css), so a
-    // Clerk outage would otherwise leave the nav's bottom permanently
-    // blank instead of falling back to the buttons already sitting there.
-    console.error("Clerk failed to load:", err);
-    const container = document.querySelector(".left-nav-auth");
-    if (container) container.classList.add("left-nav-auth-ready");
-  });
+        if (!user) {
+          navAuthContainer.innerHTML = signedOutHTML;
+          writeAuthHint({ signedIn: false });
+          reveal();
+          return;
+        }
+
+        const name = user.username || (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) || "Account";
+        navAuthContainer.innerHTML = buildSignedInHTML(name, user.imageUrl);
+        wireSignOutButton(clerkInstance);
+        writeAuthHint({ signedIn: true, name, imageUrl: user.imageUrl });
+        reveal();
+      }
+
+      render();
+      clerkInstance.addListener(render);
+    })
+    .catch((err) => {
+      // Whatever is currently shown — the cached-hint guess, or the
+      // original signed-out HTML if there was no hint — is already the
+      // safe fallback, so there is nothing to undo. Just don't let a
+      // Clerk outage look like a silent, unexplained failure, and make
+      // sure the block isn't left permanently invisible if it never got
+      // this far (no hint existed, so reveal() was never called above).
+      console.error("Clerk failed to load:", err);
+      reveal();
+    });
+}
