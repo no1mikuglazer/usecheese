@@ -24,9 +24,12 @@
    The key on the script tag is a PUBLISHABLE key, meant to be public —
    Clerk's own docs embed it directly in HTML. It identifies which Clerk
    application frontend requests belong to; it grants no access to secrets
-   or other users' data. It's a development-instance key (pk_test_…) for
-   now; swap in a production key (on every page's script tag, plus here)
-   when actually deploying.
+   or other users' data. This is now the PRODUCTION key (pk_live_…), served
+   from clerk.usecheese.xyz rather than Clerk's shared *.clerk.accounts.dev
+   subdomain — that domain is a CNAME onto Clerk's infrastructure, set up
+   and DNS-verified 2026-08-07. Development-instance accounts (pk_test_…,
+   used while building this) do NOT carry over; this is a separate, empty
+   user pool that starts fresh from here.
 */
 
 window.cheeseClerk = window.Clerk;
