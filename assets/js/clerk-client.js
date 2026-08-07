@@ -50,20 +50,35 @@ function initNavAuthState(clerkInstance) {
   // path depth to pages/signup//pages/login/).
   const signedOutHTML = container.innerHTML;
 
+  // The container starts at opacity:0 (assets/css/nav.css /
+  // style.css — .left-nav-auth) so that on EVERY page load, whatever the
+  // real auth state turns out to be, it is never painted as the wrong
+  // state first. Clerk.load() takes a real, if usually brief, network
+  // round trip; without this a signed-in user would see the signed-out
+  // Sign Up/Log In buttons flash on every navigation, since each page is a
+  // full reload of static HTML that starts out signed-out by default.
+  function reveal() {
+    container.classList.add("left-nav-auth-ready");
+  }
+
   function render() {
     const user = clerkInstance.user;
 
     if (!user) {
       container.innerHTML = signedOutHTML;
+      reveal();
       return;
     }
 
     const name = user.username || (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) || "Account";
 
+    // width/height attributes (not just the CSS rule) so the avatar is
+    // correctly sized even on a stale cached stylesheet from before this
+    // was added — HTML sizing attributes apply before any CSS is parsed.
     // Not a link yet — there is no profile page to send it to until Stage 5.
     container.innerHTML = `
       <div class="left-nav-account">
-        <img class="left-nav-account-avatar" src="${escapeHtml(user.imageUrl)}" alt="" />
+        <img class="left-nav-account-avatar" width="24" height="24" src="${escapeHtml(user.imageUrl)}" alt="" />
         <span class="left-nav-account-name">${escapeHtml(name)}</span>
       </div>
       <button type="button" class="left-nav-auth-btn left-nav-auth-btn-ghost left-nav-signout-btn">Sign Out</button>
@@ -73,6 +88,8 @@ function initNavAuthState(clerkInstance) {
     if (signOutBtn) {
       signOutBtn.addEventListener("click", () => clerkInstance.signOut());
     }
+
+    reveal();
   }
 
   render();
@@ -84,6 +101,12 @@ window.cheeseClerkReady
   .catch((err) => {
     // Nav's baked-in HTML is already the safe signed-out default, so there
     // is nothing to undo here — just don't let a Clerk outage look like a
-    // silent, unexplained failure in the console.
+    // silent, unexplained failure in the console. Still reveal the
+    // container: initNavAuthState() never got to run its own reveal(), and
+    // .left-nav-auth starts at opacity:0 (see nav.css / style.css), so a
+    // Clerk outage would otherwise leave the nav's bottom permanently
+    // blank instead of falling back to the buttons already sitting there.
     console.error("Clerk failed to load:", err);
+    const container = document.querySelector(".left-nav-auth");
+    if (container) container.classList.add("left-nav-auth-ready");
   });

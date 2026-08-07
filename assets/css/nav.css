@@ -221,6 +221,17 @@ a.left-nav-item-link:hover {
     padding: 16px 12px 0 12px;
     margin-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.07);
+    /* Hidden until assets/js/clerk-client.js knows the real auth state and
+       calls reveal() — otherwise every full-page navigation (this is a
+       multi-page static site, so every nav is a real reload) would paint
+       the signed-out buttons first and only correct it after Clerk.load()
+       resolves, flashing the wrong state for signed-in users. */
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.left-nav-auth.left-nav-auth-ready {
+    opacity: 1;
 }
 
 .left-nav-auth-btn {
@@ -287,9 +298,9 @@ a.left-nav-item-link:hover {
 }
 
 .left-nav-account-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
     flex-shrink: 0;
     object-fit: cover;
     background: rgba(255, 255, 255, 0.08);
