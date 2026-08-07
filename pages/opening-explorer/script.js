@@ -29,11 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── State ─────────────────────────────────────────────────────────────────
     const ECO_FILES = [
-        '../../data/eco/ecoA.json',
-        '../../data/eco/ecoB.json',
-        '../../data/eco/ecoC.json',
-        '../../data/eco/ecoD.json',
-        '../../data/eco/ecoE.json',
+        '../../library/eco/ecoA.json',
+        '../../library/eco/ecoB.json',
+        '../../library/eco/ecoC.json',
+        '../../library/eco/ecoD.json',
+        '../../library/eco/ecoE.json',
     ];
 
     let allOpenings = [];     // merged, loaded once

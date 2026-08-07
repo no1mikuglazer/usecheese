@@ -40,7 +40,7 @@ Everything below is available in **Version 1.3**.
 | `index.html`, `pages/` | The static website — one folder per page |
 | `assets/` | Shared CSS, JS, pieces, sounds and images |
 | `engine/` | Stockfish 18 (WebAssembly) |
-| `data/` | Static data: ECO openings, master game PGNs |
+| `library/` | Static content: ECO openings, master game PGNs |
 | `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
 
 The website and the API deploy independently. Only the Puzzles page depends on
