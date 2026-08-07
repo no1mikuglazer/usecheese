@@ -1,9 +1,7 @@
 <!doctype html>
 <!-- Cheese — Log In page
-     Visuals only — see the plan for context. No Clerk, no real submit
-     handling; this exists so the design can be reviewed before Stage 2
-     wires it up. `onsubmit="return false"` below only prevents the form's
-     default GET-to-self navigation; it is not functionality. -->
+     Real Clerk sign-in (Stage 2): clerk.client.signIn.create() with email
+     as the identifier — see script.js. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -44,7 +42,9 @@
         <div class="auth-title">Welcome back</div>
         <div class="auth-subtitle">Log in to continue your training.</div>
 
-        <form class="auth-form" onsubmit="return false">
+        <div class="auth-error" id="liError"></div>
+
+        <form class="auth-form" id="liForm">
           <div class="auth-field">
             <label class="auth-label" for="liEmail">Email</label>
             <input class="auth-input" type="email" id="liEmail" name="email" placeholder="you@example.com" autocomplete="email" />
@@ -58,7 +58,7 @@
             <input class="auth-input" type="password" id="liPassword" name="password" placeholder="Your password" autocomplete="current-password" />
           </div>
 
-          <button type="submit" class="auth-submit">Log In</button>
+          <button type="submit" class="auth-submit" id="liSubmitBtn">Log In</button>
         </form>
 
         <div class="auth-switch">
@@ -67,6 +67,10 @@
       </div>
 
     </div>
+
+    <script data-clerk-publishable-key="pk_test_dmFsdWVkLXJlZGJpcmQtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://valued-redbird-71.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+    <script src="../../assets/js/clerk-client.js"></script>
+    <script src="script.js"></script>
 
   </body>
 </html>

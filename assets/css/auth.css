@@ -98,6 +98,27 @@
 }
 
 /* =====================
+   ERROR — populated and shown by script.js on a failed submit/verify.
+   Empty and display:none otherwise, so it never reserves layout space.
+   ===================== */
+
+.auth-error {
+    display: none;
+    padding: 10px 12px;
+    margin-bottom: 18px;
+    border-radius: 8px;
+    background: rgba(180, 40, 40, 0.18);
+    border: 1px solid rgba(255, 120, 120, 0.35);
+    color: rgba(255, 170, 170, 1);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.auth-error.auth-error-visible {
+    display: block;
+}
+
+/* =====================
    FORM
    ===================== */
 
@@ -105,6 +126,16 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* Setting .hidden = true in JS (script.js, hiding #suForm to reveal the
+   verification step) relies on the browser's UA rule `[hidden]{display:none}`
+   — but that has the same specificity as .auth-form's own `display: flex`
+   above, and author CSS wins ties over the UA sheet, so without this the
+   form silently stayed visible despite `hidden` being set. Confirmed by
+   actually testing the flow, not caught by reading the JS. */
+.auth-form[hidden] {
+    display: none;
 }
 
 .auth-field {

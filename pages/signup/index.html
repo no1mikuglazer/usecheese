@@ -1,9 +1,9 @@
 <!doctype html>
 <!-- Cheese — Sign Up page
-     Visuals only — see the plan for context. No Clerk, no real submit
-     handling; this exists so the design can be reviewed before Stage 2
-     wires it up. `onsubmit="return false"` below only prevents the form's
-     default GET-to-self navigation; it is not functionality. -->
+     Real Clerk sign-up (Stage 2): clerk.client.signUp.create(), then an
+     email verification step if the Clerk dashboard requires it (the
+     #suVerify block, hidden unless signUp.status comes back
+     "missing_requirements") — see script.js. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -42,9 +42,11 @@
 
       <div class="auth-card">
         <div class="auth-title">Create your account</div>
-        <div class="auth-subtitle">Join Cheese to save your progress and train tactics.</div>
+        <div class="auth-subtitle" id="suSubtitle">Join Cheese to save your progress and train tactics.</div>
 
-        <form class="auth-form" onsubmit="return false">
+        <div class="auth-error" id="suError"></div>
+
+        <form class="auth-form" id="suForm">
           <div class="auth-field">
             <label class="auth-label" for="suUsername">Username</label>
             <input class="auth-input" type="text" id="suUsername" name="username" placeholder="Your username" autocomplete="username" />
@@ -65,8 +67,20 @@
             <input class="auth-input" type="password" id="suConfirmPassword" name="confirmPassword" placeholder="Re-enter your password" autocomplete="new-password" />
           </div>
 
-          <button type="submit" class="auth-submit">Create Account</button>
+          <button type="submit" class="auth-submit" id="suSubmitBtn">Create Account</button>
         </form>
+
+        <!-- Shown only if the Clerk dashboard requires email verification —
+             signUp.status comes back "missing_requirements" instead of
+             "complete". Hidden by default; script.js reveals it and hides
+             #suForm above instead of navigating to a second page. -->
+        <div class="auth-form" id="suVerify" hidden>
+          <div class="auth-field">
+            <label class="auth-label" for="suCode">Verification code</label>
+            <input class="auth-input" type="text" id="suCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code from your email" />
+          </div>
+          <button type="button" class="auth-submit" id="suVerifyBtn">Verify &amp; Create Account</button>
+        </div>
 
         <div class="auth-switch">
           Already have an account? <a href="../login/index.html">Log in</a>
@@ -74,6 +88,10 @@
       </div>
 
     </div>
+
+    <script data-clerk-publishable-key="pk_test_dmFsdWVkLXJlZGJpcmQtNzEuY2xlcmsuYWNjb3VudHMuZGV2JA" src="https://valued-redbird-71.clerk.accounts.dev/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+    <script src="../../assets/js/clerk-client.js"></script>
+    <script src="script.js"></script>
 
   </body>
 </html>
