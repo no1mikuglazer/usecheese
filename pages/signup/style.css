@@ -1,0 +1,11 @@
+/* Cheese — Sign Up page
+   Page-specific overrides only. Shared card/form/input/button styling lives
+   in ../../assets/css/auth.css (loaded first) — this file is intentionally
+   thin, matching how e.g. Puzzles' style.css only adds what board-layout.css
+   and nav.css don't already cover. */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}

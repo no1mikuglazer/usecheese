@@ -209,6 +209,64 @@ a.left-nav-item-link:hover {
     opacity: 0.85;
 }
 
+/* AUTH BUTTONS — duplicated from assets/css/nav.css because the Home page
+   does not load that shared file (it keeps its own full copy of the nav
+   rules above, predating nav.css's extraction). Keep both copies in sync
+   if this block changes. Visuals only for now (see pages/signup/,
+   pages/login/); Stage 2 replaces this with real signed-in/out state. */
+
+.left-nav-auth {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 12px 0 12px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.left-nav-auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: transform 0.18s ease, background 0.18s ease,
+                border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.left-nav-auth-btn-primary {
+    background: rgba(244, 247, 253, 0.95);
+    color: #0c1018;
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.left-nav-auth-btn-primary:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+}
+
+.left-nav-auth-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.left-nav-auth-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
 /* =====================
    HOME CONTENT AREA
    ===================== */

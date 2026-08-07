@@ -1,0 +1,225 @@
+/* Cheese — shared Signup/Login visual system
+   Used by pages/signup/ and pages/login/, which are near-identical in shape
+   (a centred glass card holding a small form) and differ only in copy and
+   field list — the same reasoning that already factored out board-layout.css
+   and nav.css for pages sharing structure. Load this file BEFORE the page's
+   own style.css so page-specific rules can still override where needed.
+
+   Visual language: glassmorphism, matching the home page hero and the left
+   nav — NOT the flat-black/sharp-corner language of cheese-dialogs.css. That
+   language is reserved for transient system UI (confirm/prompt popups); a
+   Signup/Login page is a full destination someone lands on, not an
+   interruption.
+
+   No functionality lives here or in these pages' HTML — no Clerk, no real
+   submit handling. That is intentionally deferred (see the plan). Forms use
+   `onsubmit="return false"` purely so clicking the button doesn't trigger a
+   real (broken) GET-to-self navigation with form fields dumped into the URL
+   — that is a side effect of using semantic <form> markup with no handler,
+   not a feature. */
+
+/* =====================
+   PAGE SHELL
+   ===================== */
+
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    background-image: url("../backgrounds/custom_bg1.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+/* =====================
+   BRAND — logo + wordmark, stacked above the card, linking home
+   ===================== */
+
+.auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    margin-bottom: 30px;
+}
+
+.auth-brand-icon {
+    width: 52px;
+    height: 52px;
+    filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.4));
+}
+
+.auth-brand-text {
+    font-size: 22px;
+    font-weight: 800;
+    color: #eef1f8;
+    letter-spacing: 0.4px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+/* =====================
+   CARD — same strong dark-glass panel as .feature-card
+   ===================== */
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 34px 32px 30px 32px;
+    border-radius: 18px;
+    background: rgba(13, 16, 22, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(22px) saturate(130%);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.auth-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #f2f5fb;
+    letter-spacing: 0.2px;
+    margin-bottom: 6px;
+}
+
+.auth-subtitle {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 26px;
+}
+
+/* =====================
+   FORM
+   ===================== */
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.auth-field-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.auth-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.2px;
+}
+
+.auth-forgot {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+}
+
+.auth-forgot:hover {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: underline;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.auth-input::placeholder {
+    color: rgba(255, 255, 255, 0.32);
+}
+
+.auth-input:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+/* =====================
+   SUBMIT — same primary language as .home-btn-primary, full width
+   ===================== */
+
+.auth-submit {
+    width: 100%;
+    margin-top: 6px;
+    padding: 13px 20px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(244, 247, 253, 0.95);
+    color: #0c1018;
+    font-size: 14.5px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+    transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+                box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.auth-submit:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.42);
+}
+
+.auth-submit:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.38);
+}
+
+/* =====================
+   SWITCH LINK — "Already have an account? Log in" / the reverse
+   ===================== */
+
+.auth-switch {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-switch a {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+/* =====================
+   RESPONSIVE — light touch only; viewports at/below 768px are covered by
+   the site-wide mobile gate (mobile-gate.css), loaded on every page
+   including these two, so no dedicated mobile layout is needed here.
+   ===================== */
+
+@media (max-width: 480px) {
+    .auth-card { padding: 28px 22px 26px 22px; }
+    .auth-title { font-size: 21px; }
+}

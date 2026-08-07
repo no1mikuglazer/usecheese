@@ -208,3 +208,62 @@ a.left-nav-item-link:hover {
 .left-nav-item.left-nav-active .left-nav-icon {
     opacity: 1;
 }
+
+/* AUTH BUTTONS — pinned to the bottom of the sidebar via .left-nav-items'
+   flex:1 above pushing this sibling block down, no extra positioning
+   needed. Visuals only for now (see pages/signup/, pages/login/); Stage 2
+   replaces this block with real signed-in/signed-out state. */
+
+.left-nav-auth {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 12px 0 12px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.left-nav-auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: transform 0.18s ease, background 0.18s ease,
+                border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Primary — Sign Up, same white-fill language as .home-btn-primary */
+.left-nav-auth-btn-primary {
+    background: rgba(244, 247, 253, 0.95);
+    color: #0c1018;
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.left-nav-auth-btn-primary:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+}
+
+/* Secondary — Log In, translucent ghost */
+.left-nav-auth-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.left-nav-auth-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
