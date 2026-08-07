@@ -131,6 +131,42 @@ into the final table in band order, or appending bands incrementally, would
 break the correlation silently: queries would still return rows, just the wrong
 ones for the requested rating range.
 
+## User accounts database
+
+Accounts (Clerk-authenticated users, their username, and their puzzle stats)
+live in `cheese-users.sqlite` — a **separate file** from the puzzle database,
+with its own connection module (`src/db/usersConnection.js`) and its own path
+(`USERS_DB_PATH`, see `.env.example`).
+
+### Why the user database is a separate file
+
+`import-puzzles.js` drops and rebuilds its tables from scratch; `shrink-database.js`
+deletes and recreates its entire target file. Both are documented, routine
+operations above — re-running either is explicitly safe and expected. If
+account data lived in the same file, or even a table in the same file,
+either command would silently destroy every user the next time someone ran
+it out of habit. A separate file makes that failure mode impossible rather
+than merely unlikely, and keeps the puzzle database exactly as disposable as
+it already was.
+
+### Setting it up
+
+Unlike the puzzle database, there is nothing to import — the schema is all
+there is, and it is created automatically:
+
+```bash
+npm run init:users-db
+```
+
+This is safe to run any number of times, including against a database that
+already has real users in it. It only ever runs `CREATE TABLE IF NOT EXISTS`
+— see the script's own header for why that matters here specifically, in a
+way it doesn't for the puzzle scripts. `src/db/usersConnection.js` runs the
+same schema on every server start for the same reason, so a fresh local
+checkout works without this command either — it exists for the cases where
+you want the step to be explicit and visible, such as preparing a production
+volume.
+
 ## Running
 
 ```bash
@@ -195,3 +231,11 @@ out-of-space error rather than anything that names the real cause.
 
 Both files are reproducible from the parquet by re-running the two commands
 above, which is the recovery path if the volume is ever lost.
+
+The user-accounts database is unrelated to any of this and needs no upload —
+`USERS_DB_PATH` just needs to point at a path on the same persistent volume,
+and the schema creates itself there on first connection (or run
+`npm run init:users-db` against it explicitly first, if you want that step
+to be visible in the deploy log). Unlike the puzzle database, this file is
+**not** reproducible from anything — it is the only copy of every account,
+so it must actually be included in whatever backs up the volume.

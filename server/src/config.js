@@ -30,8 +30,8 @@ function readEnv(name) {
 // Resolve relative DB paths against server/, not the process CWD, so `npm run
 // dev` and `node src/index.js` behave identically regardless of where they're
 // launched from.
-function resolveDbPath(value) {
-  const raw = value || "./data/cheese.sqlite";
+function resolveDbPath(value, defaultRelative) {
+  const raw = value || defaultRelative;
   return path.isAbsolute(raw) ? raw : path.resolve(serverRoot, raw);
 }
 
@@ -46,7 +46,13 @@ function parseOrigins(value) {
 export const config = {
   env: readEnv("NODE_ENV") || "development",
   port: Number(readEnv("PORT")) || 3001,
-  dbPath: resolveDbPath(readEnv("DB_PATH")),
+  dbPath: resolveDbPath(readEnv("DB_PATH"), "./data/cheese.sqlite"),
+  // Deliberately a SEPARATE file from dbPath, never a table alongside the
+  // puzzles — import-puzzles.js and shrink-database.js both drop/recreate
+  // their target file as documented, routine operations. If accounts lived
+  // there too, running either would silently destroy every user. See
+  // "Why the user database is a separate file" in README.md.
+  usersDbPath: resolveDbPath(readEnv("USERS_DB_PATH"), "./data/cheese-users.sqlite"),
   corsOrigins: parseOrigins(readEnv("CORS_ORIGINS")),
   serverRoot,
 };
