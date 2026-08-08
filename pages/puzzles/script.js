@@ -134,6 +134,19 @@ let furthestIndex = -1; // highest index legitimately reached this attempt — t
 
 const session = { solved: 0, attempted: 0, streak: 0 };
 
+// ── Rating (signed-in only) ──────────────────────────────────────────────
+// isSignedIn tracks the current confirmed auth state (corrected once
+// window.cheeseClerkReady resolves — see the Boot section). ratingHistory is
+// this session's rating values only, for the sparkline; it is deliberately
+// not persisted (see the puzzle-rating plan for why: full history is the
+// profile page's job, this is "the simple version now").
+let isSignedIn = false;
+let ratingHistory = [];
+// A puzzle id is added here the first time it finishes scoring this session,
+// so hitting Retry on a puzzle whose answer you've already seen (via a wrong
+// move or a hint) can't be replayed for repeat clean-solve reward.
+const scoredPuzzleIds = new Set();
+
 // Timers are tracked so a new puzzle never gets interrupted by a reply
 // scheduled for the previous one.
 let pendingTimers = [];
@@ -174,6 +187,12 @@ const opponentPfpEl = document.getElementById("pzOpponentPfp");
 const solvedCountEl = document.getElementById("pzSolvedCount");
 const attemptCountEl = document.getElementById("pzAttemptCount");
 const streakCountEl = document.getElementById("pzStreakCount");
+const headerStatEl = document.getElementById("pzHeaderStat");
+const headerStatLabelEl = document.getElementById("pzHeaderStatLabel");
+const ratingPopupEl = document.getElementById("pzRatingPopup");
+const sparklineSectionEl = document.getElementById("pzSparkline");
+const sparklineLineEl = document.getElementById("pzSparklineLine");
+const sparklineDotEl = document.getElementById("pzSparklineDot");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
@@ -433,6 +452,97 @@ function updateSessionDisplay() {
   streakCountEl.textContent = String(session.streak);
 }
 
+// ── Rating display (signed-in only) ─────────────────────────────────────
+
+// Draws the session-only sparkline from ratingHistory. Deliberately no
+// axis/gridlines/tooltip — this is a stat-tile trend glyph next to the
+// header number, not a standalone chart; see the puzzle-rating plan.
+function drawSparkline() {
+  const n = ratingHistory.length;
+
+  if (n === 0) {
+    sparklineLineEl.setAttribute("points", "");
+    sparklineDotEl.style.display = "none";
+    return;
+  }
+
+  const minVal = Math.min(...ratingHistory);
+  const maxVal = Math.max(...ratingHistory);
+  const span = maxVal - minVal || 1;
+
+  const coords = ratingHistory.map((value, i) => {
+    const x = n === 1 ? 98 : 2 + (i / (n - 1)) * 96;
+    const y = 26 - ((value - minVal) / span) * 24;
+    return [x, y];
+  });
+
+  sparklineLineEl.setAttribute("points", coords.map(([x, y]) => `${x},${y}`).join(" "));
+
+  const [dotX, dotY] = coords[n - 1];
+  sparklineDotEl.setAttribute("cx", String(dotX));
+  sparklineDotEl.setAttribute("cy", String(dotY));
+  sparklineDotEl.style.display = "";
+
+  sparklineDotEl.classList.remove("pz-sparkline-dot-up", "pz-sparkline-dot-down");
+  const lastDelta = n >= 2 ? ratingHistory[n - 1] - ratingHistory[n - 2] : 0;
+  sparklineDotEl.classList.add(lastDelta < 0 ? "pz-sparkline-dot-down" : "pz-sparkline-dot-up");
+}
+
+// Signed-out (or not-yet-confirmed): today's behavior, puzzle count in the header.
+function showPuzzleCountMode() {
+  headerStatLabelEl.hidden = true;
+  headerStatEl.classList.remove("pz-header-stat-rating");
+  sparklineSectionEl.hidden = true;
+  ratingHistory = [];
+
+  fetchPuzzleStats()
+    .then((stats) => {
+      totalCountEl.textContent = `${stats.count.toLocaleString()} puzzles`;
+    })
+    .catch(() => {
+      totalCountEl.textContent = "";
+    });
+}
+
+// Signed-in, confirmed: the user's own persisted rating replaces the puzzle count.
+function showRatingMode(stats) {
+  headerStatLabelEl.hidden = false;
+  headerStatEl.classList.add("pz-header-stat-rating");
+  sparklineSectionEl.hidden = false;
+  totalCountEl.textContent = String(stats.rating);
+  ratingHistory = [stats.rating];
+  drawSparkline();
+}
+
+// Ticks the header number from its last value to the new one over ~600ms
+// rather than snapping, so a solve reads as a real change rather than a
+// silent overwrite.
+function animateRatingValue(fromValue, toValue) {
+  const duration = 600;
+  const start = performance.now();
+
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    totalCountEl.textContent = String(Math.round(fromValue + (toValue - fromValue) * eased));
+    if (t < 1) requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+function showRatingPopup(delta) {
+  ratingPopupEl.textContent = (delta > 0 ? "+" : "") + delta;
+  ratingPopupEl.classList.remove(
+    "pz-rating-popup-up",
+    "pz-rating-popup-down",
+    "pz-rating-popup-play",
+  );
+  void ratingPopupEl.offsetWidth; // force reflow so a repeat popup re-triggers the animation
+  ratingPopupEl.classList.add(delta >= 0 ? "pz-rating-popup-up" : "pz-rating-popup-down");
+  ratingPopupEl.classList.add("pz-rating-popup-play");
+}
+
 function updatePlayerBars() {
   const solverIsWhite = solverColor === "w";
   solverNameEl.textContent = solverIsWhite ? "White" : "Black";
@@ -657,6 +767,26 @@ function onPuzzleSolved() {
   }
 
   setControlsBusy(false); // also disables Hint, since the state is no longer SOLVING
+
+  if (isSignedIn && currentPuzzle && !scoredPuzzleIds.has(currentPuzzle.id)) {
+    scoredPuzzleIds.add(currentPuzzle.id);
+    submitPuzzleResult(currentPuzzle.id, failedThisPuzzle, usedHint)
+      .then((result) => {
+        const fromValue = ratingHistory.length
+          ? ratingHistory[ratingHistory.length - 1]
+          : result.puzzleStats.rating - result.delta;
+        animateRatingValue(fromValue, result.puzzleStats.rating);
+        showRatingPopup(result.delta);
+        ratingHistory.push(result.puzzleStats.rating);
+        drawSparkline();
+      })
+      .catch(() => {
+        // Non-critical — the header keeps showing the last known rating.
+        // scoredPuzzleIds already has this id, matching the "once per
+        // puzzle this session" rule even though this particular attempt
+        // didn't actually reach the server.
+      });
+  }
 }
 
 // ── Loading puzzles ─────────────────────────────────────────────────────────
@@ -1127,12 +1257,42 @@ presetsEl.addEventListener("click", (e) => {
 
 updateSessionDisplay();
 
-fetchPuzzleStats()
-  .then((stats) => {
-    totalCountEl.textContent = `${stats.count.toLocaleString()} puzzles`;
+// readAuthHint() is defined by assets/js/clerk-client.js, loaded before this
+// file on every page that carries the nav — reused as-is rather than
+// duplicating it here. The optimistic read lets a returning signed-in user
+// see their rating immediately, before Clerk's own network-bound session
+// check resolves; window.cheeseClerkReady below corrects it if the cached
+// guess was wrong (same pattern clerk-client.js already uses for the nav).
+const authHint = readAuthHint();
+
+if (authHint && authHint.signedIn) {
+  isSignedIn = true;
+  headerStatLabelEl.hidden = false;
+  headerStatEl.classList.add("pz-header-stat-rating");
+  totalCountEl.textContent = "—";
+  fetchMyPuzzleProfile()
+    .then((user) => {
+      if (isSignedIn) showRatingMode(user.puzzleStats);
+    })
+    .catch(() => {});
+} else {
+  showPuzzleCountMode();
+}
+
+window.cheeseClerkReady
+  .then((clerkInstance) => {
+    const reallySignedIn = !!clerkInstance.user;
+    if (reallySignedIn === isSignedIn) return; // hint already matched reality
+
+    isSignedIn = reallySignedIn;
+    if (reallySignedIn) {
+      fetchMyPuzzleProfile()
+        .then((user) => showRatingMode(user.puzzleStats))
+        .catch(() => {});
+    } else {
+      showPuzzleCountMode();
+    }
   })
-  .catch(() => {
-    totalCountEl.textContent = "";
-  });
+  .catch(() => {});
 
 loadNewPuzzle();

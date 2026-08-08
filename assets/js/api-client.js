@@ -33,8 +33,10 @@ class CheeseApiError extends Error {
   }
 }
 
-async function cheeseApiRequest(path) {
+async function cheeseApiRequest(path, options = {}) {
   let response;
+
+  const { body: requestBody, ...rest } = options;
 
   try {
     // credentials: 'include' — without it, the browser never attaches
@@ -43,7 +45,16 @@ async function cheeseApiRequest(path) {
     // matter what the server's CORS config allows. Harmless on endpoints
     // that don't care who's signed in; there just isn't a cookie to send
     // before anyone has signed in at all.
-    response = await fetch(CHEESE_API_BASE + path, { credentials: "include" });
+    response = await fetch(CHEESE_API_BASE + path, {
+      credentials: "include",
+      ...rest,
+      ...(requestBody !== undefined
+        ? {
+            headers: { "Content-Type": "application/json", ...rest.headers },
+            body: JSON.stringify(requestBody),
+          }
+        : {}),
+    });
   } catch (networkError) {
     // fetch() only rejects on network-level failures — the server being down,
     // DNS failure, or CORS blocking the request.
@@ -84,4 +95,20 @@ function fetchPuzzleById(id) {
 /* Total number of puzzles available. */
 function fetchPuzzleStats() {
   return cheeseApiRequest("/puzzles/stats");
+}
+
+/* The signed-in user's profile, including persisted puzzle stats/rating.
+   Requires a real Clerk session cookie — 401s otherwise. */
+function fetchMyPuzzleProfile() {
+  return cheeseApiRequest("/users/me");
+}
+
+/* Scores a completed puzzle attempt and persists the result. The server
+   looks up the puzzle's own rating itself rather than trusting one from the
+   client — see server/src/modules/users/users.service.js. */
+function submitPuzzleResult(puzzleId, failed, usedHint) {
+  return cheeseApiRequest("/users/me/puzzle-result", {
+    method: "POST",
+    body: { puzzleId, failed, usedHint },
+  });
 }

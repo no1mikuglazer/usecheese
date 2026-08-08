@@ -41,9 +41,23 @@ function createSchema(database) {
       attempted       INTEGER NOT NULL DEFAULT 0,
       best_streak     INTEGER NOT NULL DEFAULT 0,
       current_streak  INTEGER NOT NULL DEFAULT 0,
-      last_solved_at  TEXT
+      last_solved_at  TEXT,
+      rating          INTEGER NOT NULL DEFAULT 200
     );
   `);
+
+  // SQLite has no "ADD COLUMN IF NOT EXISTS" — a database that already existed
+  // before `rating` was added needs this guarded ALTER TABLE instead. Runs on
+  // every connection, same as the CREATE TABLE above, so a production
+  // database self-heals without a separate manual migration step.
+  const hasRatingColumn = database
+    .prepare("PRAGMA table_info(puzzle_stats)")
+    .all()
+    .some((column) => column.name === "rating");
+
+  if (!hasRatingColumn) {
+    database.exec("ALTER TABLE puzzle_stats ADD COLUMN rating INTEGER NOT NULL DEFAULT 200");
+  }
 }
 
 export function getUsersDb() {

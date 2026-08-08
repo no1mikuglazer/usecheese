@@ -11,3 +11,10 @@ export async function me(req, res) {
   const user = await usersService.getOrCreateUser(userId);
   res.json(user);
 }
+
+export async function submitPuzzleResult(req, res) {
+  const { userId } = getAuth(req);
+  const { puzzleId, failed, usedHint } = req.validated.body;
+  const result = await usersService.recordPuzzleResult(userId, puzzleId, failed, usedHint);
+  res.json(result);
+}

@@ -70,9 +70,22 @@ function createSchema(db) {
       attempted       INTEGER NOT NULL DEFAULT 0,
       best_streak     INTEGER NOT NULL DEFAULT 0,
       current_streak  INTEGER NOT NULL DEFAULT 0,
-      last_solved_at  TEXT
+      last_solved_at  TEXT,
+      rating          INTEGER NOT NULL DEFAULT 200
     );
   `);
+
+  // See src/db/usersConnection.js's identical guard for why: SQLite has no
+  // "ADD COLUMN IF NOT EXISTS", so a database that predates `rating` needs
+  // this explicit, idempotent ALTER TABLE instead.
+  const hasRatingColumn = db
+    .prepare("PRAGMA table_info(puzzle_stats)")
+    .all()
+    .some((column) => column.name === "rating");
+
+  if (!hasRatingColumn) {
+    db.exec("ALTER TABLE puzzle_stats ADD COLUMN rating INTEGER NOT NULL DEFAULT 200");
+  }
 }
 
 function main() {

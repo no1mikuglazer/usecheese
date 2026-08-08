@@ -248,6 +248,97 @@ body {
     white-space: nowrap;
 }
 
+/* HEADER STAT (puzzle count, signed-out — or the user's own rating, signed-in) */
+
+.pz-header-stat {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.pz-header-stat-label {
+    font-size: clamp(10px, 0.72vw, 11px);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: rgba(233, 238, 246, 0.42);
+}
+
+.pz-header-stat-value {
+    font-size: clamp(11px, 0.85vw, 13px);
+    color: rgba(233, 238, 246, 0.45);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Signed-in rating reads heavier than the plain puzzle-count text it replaces. */
+.pz-header-stat-rating .pz-header-stat-value {
+    font-size: clamp(15px, 1.2vw, 19px);
+    font-weight: 800;
+    color: #eef1f8;
+}
+
+/* RATING POPUP — a transient +N/-N after each solve, anchored to the header stat. */
+
+.pz-rating-popup {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+}
+
+.pz-rating-popup-play {
+    animation: pzRatingPop 1100ms ease forwards;
+}
+
+.pz-rating-popup-up { color: #58c878; }
+.pz-rating-popup-down { color: #e8503e; }
+
+@keyframes pzRatingPop {
+    0%   { opacity: 0; transform: translateY(4px); }
+    15%  { opacity: 1; transform: translateY(0); }
+    70%  { opacity: 1; transform: translateY(-10px); }
+    100% { opacity: 0; transform: translateY(-18px); }
+}
+
+/* RATING SPARKLINE — a small session-only trend glyph, not a full chart:
+   no axis, no gridlines, no tooltip. See the puzzle-rating plan for why. */
+
+.pz-sparkline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pz-sparkline-svg {
+    width: 100%;
+    height: 32px;
+    overflow: visible;
+}
+
+#pzSparklineLine {
+    fill: none;
+    stroke: rgba(233, 238, 246, 0.55);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+#pzSparklineDot {
+    stroke: #0c101c;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+#pzSparklineDot.pz-sparkline-dot-up { fill: #58c878; }
+#pzSparklineDot.pz-sparkline-dot-down { fill: #e8503e; }
+
 /* STATUS BANNER */
 
 .pz-status {

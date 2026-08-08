@@ -262,7 +262,14 @@
           <!-- HEADER -->
           <div class="pz-panel-header">
             <h1 class="pz-panel-title">Puzzles</h1>
-            <span class="pz-panel-count" id="pzTotalCount">&nbsp;</span>
+            <!-- Signed-out: puzzle count (today's behavior). Signed-in: the
+                 user's own persisted rating, with a +N/-N popup anchored to
+                 it after each solve — see pages/puzzles/script.js. -->
+            <div class="pz-header-stat" id="pzHeaderStat">
+              <span class="pz-header-stat-label" id="pzHeaderStatLabel" hidden>Rating</span>
+              <span class="pz-header-stat-value" id="pzTotalCount">&nbsp;</span>
+              <span class="pz-rating-popup" id="pzRatingPopup"></span>
+            </div>
           </div>
 
           <!-- STATUS BANNER -->
@@ -277,7 +284,7 @@
           <!-- PUZZLE META -->
           <div class="pz-meta" id="pzMeta">
             <div class="pz-meta-row">
-              <span class="pz-meta-label">Rating</span>
+              <span class="pz-meta-label">Puzzle Rating</span>
               <span class="pz-meta-value" id="pzRating">—</span>
             </div>
           </div>
@@ -304,6 +311,17 @@
                 <input type="number" id="pzMaxRating" min="0" max="3500" step="50" value="1800" />
               </label>
             </div>
+          </div>
+
+          <!-- RATING TREND — signed-in only; a session-only sparkline (lost
+               on reload). Full persisted history lives on the profile page
+               (Stage 5), not here. -->
+          <div class="pz-sparkline" id="pzSparkline" hidden>
+            <span class="pz-section-label">This Session</span>
+            <svg class="pz-sparkline-svg" id="pzSparklineSvg" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+              <polyline id="pzSparklineLine" points="" />
+              <circle id="pzSparklineDot" r="4" cx="0" cy="0" />
+            </svg>
           </div>
 
           <!-- ACTIONS -->
