@@ -55,7 +55,20 @@ export function createApp() {
   // it. No explicit keys passed: relies on CLERK_SECRET_KEY /
   // CLERK_PUBLISHABLE_KEY being set in the environment (see config.js's
   // fail-fast check, and .env.example for why they're read there too).
-  app.use(clerkMiddleware());
+  //
+  // authorizedParties: without this, Clerk silently rejected every real
+  // session cookie as unauthenticated — found live, by a real signed-in
+  // user's request 401ing despite the cookie genuinely being sent (confirmed
+  // via their own Network tab: __session present, server still said
+  // authentication_required). Our API is on api.usecheese.xyz, a different
+  // origin than the usecheese.xyz frontend that issued the session, even
+  // though they share a registrable domain — Clerk's docs describe this
+  // exact allowlist as protection against "the subdomain cookie leaking
+  // attack," and without it a session from a party it doesn't recognize is
+  // rejected outright rather than accepted. Reuses config.corsOrigins rather
+  // than a second hardcoded URL — same list, same meaning: origins this API
+  // trusts.
+  app.use(clerkMiddleware({ authorizedParties: config.corsOrigins }));
 
   app.use("/api", apiRateLimiter);
   app.use("/api/health", healthRouter);
