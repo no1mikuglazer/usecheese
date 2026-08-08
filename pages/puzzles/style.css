@@ -287,49 +287,6 @@ body {
     100% { opacity: 0; transform: translateY(-18px); }
 }
 
-/* RATING SPARKLINE — a small session-only trend glyph, not a full chart:
-   no axis, no gridlines, no tooltip. See the puzzle-rating plan for why. */
-
-.pz-sparkline {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-/* Same CSS-specificity fix already needed once before for .auth-form: the
-   UA stylesheet's [hidden]{display:none} ties with .pz-sparkline{display:flex}
-   above, and author CSS wins ties — so the `hidden` attribute alone did NOT
-   hide this section. Without this, the sparkline rendered anyway while
-   "hidden" (default cx/cy=0, undrawn polyline), showing as a stray dot at
-   the section's top-left corner in both auth states. */
-.pz-sparkline[hidden] {
-    display: none;
-}
-
-.pz-sparkline-svg {
-    width: 100%;
-    height: 32px;
-    overflow: visible;
-}
-
-#pzSparklineLine {
-    fill: none;
-    stroke: rgba(233, 238, 246, 0.55);
-    stroke-width: 2;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    vector-effect: non-scaling-stroke;
-}
-
-#pzSparklineDot {
-    stroke: #0c101c;
-    stroke-width: 2;
-    vector-effect: non-scaling-stroke;
-}
-
-#pzSparklineDot.pz-sparkline-dot-up { fill: #58c878; }
-#pzSparklineDot.pz-sparkline-dot-down { fill: #e8503e; }
-
 /* STATUS BANNER */
 
 .pz-status {

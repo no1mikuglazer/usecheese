@@ -136,12 +136,8 @@ const session = { solved: 0, attempted: 0, streak: 0 };
 
 // ── Rating (signed-in only) ──────────────────────────────────────────────
 // isSignedIn tracks the current confirmed auth state (corrected once
-// window.cheeseClerkReady resolves — see the Boot section). ratingHistory is
-// this session's rating values only, for the sparkline; it is deliberately
-// not persisted (see the puzzle-rating plan for why: full history is the
-// profile page's job, this is "the simple version now").
+// window.cheeseClerkReady resolves — see the Boot section).
 let isSignedIn = false;
-let ratingHistory = [];
 // A puzzle id is added here the first time it finishes scoring this session,
 // so hitting Retry on a puzzle whose answer you've already seen (via a wrong
 // move or a hint) can't be replayed for repeat clean-solve reward.
@@ -189,9 +185,6 @@ const attemptCountEl = document.getElementById("pzAttemptCount");
 const streakCountEl = document.getElementById("pzStreakCount");
 const headerStatEl = document.getElementById("pzHeaderStat");
 const ratingPopupEl = document.getElementById("pzRatingPopup");
-const sparklineSectionEl = document.getElementById("pzSparkline");
-const sparklineLineEl = document.getElementById("pzSparklineLine");
-const sparklineDotEl = document.getElementById("pzSparklineDot");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
@@ -453,47 +446,11 @@ function updateSessionDisplay() {
 
 // ── Rating display (signed-in only) ─────────────────────────────────────
 
-// Draws the session-only sparkline from ratingHistory. Deliberately no
-// axis/gridlines/tooltip — this is a stat-tile trend glyph next to the
-// header number, not a standalone chart; see the puzzle-rating plan.
-function drawSparkline() {
-  const n = ratingHistory.length;
-
-  if (n === 0) {
-    sparklineLineEl.setAttribute("points", "");
-    sparklineDotEl.style.display = "none";
-    return;
-  }
-
-  const minVal = Math.min(...ratingHistory);
-  const maxVal = Math.max(...ratingHistory);
-  const span = maxVal - minVal || 1;
-
-  const coords = ratingHistory.map((value, i) => {
-    const x = n === 1 ? 98 : 2 + (i / (n - 1)) * 96;
-    const y = 26 - ((value - minVal) / span) * 24;
-    return [x, y];
-  });
-
-  sparklineLineEl.setAttribute("points", coords.map(([x, y]) => `${x},${y}`).join(" "));
-
-  const [dotX, dotY] = coords[n - 1];
-  sparklineDotEl.setAttribute("cx", String(dotX));
-  sparklineDotEl.setAttribute("cy", String(dotY));
-  sparklineDotEl.style.display = "";
-
-  sparklineDotEl.classList.remove("pz-sparkline-dot-up", "pz-sparkline-dot-down");
-  const lastDelta = n >= 2 ? ratingHistory[n - 1] - ratingHistory[n - 2] : 0;
-  sparklineDotEl.classList.add(lastDelta < 0 ? "pz-sparkline-dot-down" : "pz-sparkline-dot-up");
-}
-
 // Signed-out (or not-yet-confirmed, or a failed rating fetch — see the Boot
 // section for why this is also the fallback there): today's behavior,
 // puzzle count in the header.
 function showPuzzleCountMode() {
   headerStatEl.classList.remove("pz-header-stat-rating");
-  sparklineSectionEl.hidden = true;
-  ratingHistory = [];
 
   fetchPuzzleStats()
     .then((stats) => {
@@ -508,10 +465,7 @@ function showPuzzleCountMode() {
 // count, shown directly with no label.
 function showRatingMode(stats) {
   headerStatEl.classList.add("pz-header-stat-rating");
-  sparklineSectionEl.hidden = false;
   totalCountEl.textContent = String(stats.rating);
-  ratingHistory = [stats.rating];
-  drawSparkline();
 }
 
 // Ticks the header number from its last value to the new one over ~600ms
@@ -772,13 +726,8 @@ function onPuzzleSolved() {
     scoredPuzzleIds.add(currentPuzzle.id);
     submitPuzzleResult(currentPuzzle.id, failedThisPuzzle, usedHint)
       .then((result) => {
-        const fromValue = ratingHistory.length
-          ? ratingHistory[ratingHistory.length - 1]
-          : result.puzzleStats.rating - result.delta;
-        animateRatingValue(fromValue, result.puzzleStats.rating);
+        animateRatingValue(result.puzzleStats.rating - result.delta, result.puzzleStats.rating);
         showRatingPopup(result.delta);
-        ratingHistory.push(result.puzzleStats.rating);
-        drawSparkline();
       })
       .catch(() => {
         // Non-critical — the header keeps showing the last known rating.
