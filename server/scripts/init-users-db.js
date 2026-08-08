@@ -73,6 +73,23 @@ function createSchema(db) {
       last_solved_at  TEXT,
       rating          INTEGER NOT NULL DEFAULT 200
     );
+
+    -- See src/db/usersConnection.js's identical table for why: pure data
+    -- collection ahead of a future stats/improvement-areas feature, nothing
+    -- reads it yet.
+    CREATE TABLE IF NOT EXISTS puzzle_attempts (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_user_id  TEXT NOT NULL REFERENCES users(clerk_user_id),
+      puzzle_id      TEXT NOT NULL,
+      puzzle_rating  INTEGER NOT NULL,
+      themes         TEXT,
+      failed         INTEGER NOT NULL,
+      used_hint      INTEGER NOT NULL,
+      rating_delta   INTEGER NOT NULL,
+      attempted_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
   `);
 
   // See src/db/usersConnection.js's identical guard for why: SQLite has no

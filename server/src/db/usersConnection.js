@@ -44,6 +44,26 @@ function createSchema(database) {
       last_solved_at  TEXT,
       rating          INTEGER NOT NULL DEFAULT 200
     );
+
+    -- One row per completed puzzle attempt. Nothing reads this yet — no
+    -- endpoint, no UI — it exists purely to have real history already
+    -- accumulating before the future stats/improvement-areas feature needs
+    -- it (themes let that feature find patterns like "struggles with pins";
+    -- puzzle_id lets it re-fetch the exact position later without having
+    -- stored the FEN itself here).
+    CREATE TABLE IF NOT EXISTS puzzle_attempts (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_user_id  TEXT NOT NULL REFERENCES users(clerk_user_id),
+      puzzle_id      TEXT NOT NULL,
+      puzzle_rating  INTEGER NOT NULL,
+      themes         TEXT,
+      failed         INTEGER NOT NULL,
+      used_hint      INTEGER NOT NULL,
+      rating_delta   INTEGER NOT NULL,
+      attempted_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
   `);
 
   // SQLite has no "ADD COLUMN IF NOT EXISTS" — a database that already existed

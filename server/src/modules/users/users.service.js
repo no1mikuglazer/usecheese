@@ -30,6 +30,11 @@ function getStatements() {
           last_solved_at = COALESCE(?, last_solved_at)
       WHERE clerk_user_id = ?
     `),
+    insertAttempt: db.prepare(`
+      INSERT INTO puzzle_attempts
+        (clerk_user_id, puzzle_id, puzzle_rating, themes, failed, used_hint, rating_delta)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `),
   };
   return statements;
 }
@@ -128,6 +133,19 @@ export async function recordPuzzleResult(clerkUserId, puzzleId, failed, usedHint
       currentStreak,
       lastSolvedAt,
       clerkUserId,
+    );
+
+    // Pure data collection for a future stats/improvement-areas feature —
+    // nothing reads this table yet. Themes stored space-separated, matching
+    // how the puzzles table itself already stores them (puzzles.service.js).
+    stmts.insertAttempt.run(
+      clerkUserId,
+      puzzle.id,
+      puzzle.rating,
+      puzzle.themes.join(" "),
+      failed ? 1 : 0,
+      usedHint ? 1 : 0,
+      delta,
     );
 
     return stmts.statsByClerkId.get(clerkUserId);
