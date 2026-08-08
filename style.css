@@ -305,6 +305,25 @@ a.left-nav-item-link:hover {
     background: rgba(255, 255, 255, 0.08);
 }
 
+/* Default avatar — shown instead of Clerk's own generated placeholder
+   (a colourful gradient tile) when the user hasn't uploaded a real photo.
+   Duplicated from assets/css/nav.css because Home doesn't load that
+   shared file; keep both in sync. */
+.left-nav-account-avatar-default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    user-select: none;
+}
+
 .left-nav-account-name {
     font-size: 14px;
     font-weight: 700;

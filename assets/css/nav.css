@@ -306,6 +306,27 @@ a.left-nav-item-link:hover {
     background: rgba(255, 255, 255, 0.08);
 }
 
+/* Default avatar — shown instead of Clerk's own generated placeholder
+   (a colourful gradient tile) when the user hasn't uploaded a real photo.
+   Same glass recipe as the rest of the site's dark UI (.feature-card,
+   .left-nav-auth-btn-ghost): translucent white + backdrop-blur + a soft
+   border, not a new visual language. Grey/white on purpose — neutral
+   until the user actually sets a real picture. */
+.left-nav-account-avatar-default {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    user-select: none;
+}
+
 .left-nav-account-name {
     font-size: 14px;
     font-weight: 700;

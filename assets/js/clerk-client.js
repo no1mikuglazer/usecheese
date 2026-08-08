@@ -90,15 +90,30 @@ if (navAuthContainer) {
   // captured immediately, before anything below touches the container.
   const signedOutHTML = navAuthContainer.innerHTML;
 
-  // width/height attributes (not just the CSS rule) so the avatar is
-  // correctly sized even against a stale cached stylesheet from before
-  // .left-nav-account-avatar existed — HTML sizing attributes apply
-  // before any CSS is parsed.
+  // Clerk's own `imageUrl` is never empty — when a user hasn't uploaded a
+  // photo (or one wasn't copied from OAuth), it points at a Clerk-generated
+  // placeholder image (a colourful gradient tile with an icon baked into
+  // the pixels), not a blank. `hasImage` is what distinguishes "real photo"
+  // from "Clerk's own placeholder" — false means Clerk is currently serving
+  // its own generated image, which is what we replace here with a plain
+  // initial-letter glass tile matching the site's own look instead.
+  function avatarMarkup(name, avatar) {
+    if (avatar && avatar.hasImage) {
+      return `<img class="left-nav-account-avatar" width="24" height="24" src="${escapeHtml(avatar.imageUrl)}" alt="" />`;
+    }
+    const initial = escapeHtml((name || "?").trim().charAt(0).toUpperCase() || "?");
+    return `<div class="left-nav-account-avatar left-nav-account-avatar-default" aria-hidden="true">${initial}</div>`;
+  }
+
+  // width/height attributes on the <img> case (not just the CSS rule) so
+  // the avatar is correctly sized even against a stale cached stylesheet
+  // from before .left-nav-account-avatar existed — HTML sizing attributes
+  // apply before any CSS is parsed.
   // Not a link yet — there is no profile page to send it to until Stage 5.
-  function buildSignedInHTML(name, imageUrl) {
+  function buildSignedInHTML(name, avatar) {
     return `
       <div class="left-nav-account">
-        <img class="left-nav-account-avatar" width="24" height="24" src="${escapeHtml(imageUrl)}" alt="" />
+        ${avatarMarkup(name, avatar)}
         <span class="left-nav-account-name">${escapeHtml(name)}</span>
       </div>
       <button type="button" class="left-nav-auth-btn left-nav-auth-btn-ghost left-nav-signout-btn">Sign Out</button>
@@ -119,7 +134,7 @@ if (navAuthContainer) {
   const hint = readAuthHint();
   if (hint) {
     navAuthContainer.innerHTML = hint.signedIn
-      ? buildSignedInHTML(hint.name, hint.imageUrl)
+      ? buildSignedInHTML(hint.name, { hasImage: hint.hasImage, imageUrl: hint.imageUrl })
       : signedOutHTML;
     // Not wired to Sign Out yet on this optimistic pass — clicking it
     // before Clerk has loaded would call signOut() on nothing. The real
@@ -141,9 +156,9 @@ if (navAuthContainer) {
         }
 
         const name = user.username || (user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) || "Account";
-        navAuthContainer.innerHTML = buildSignedInHTML(name, user.imageUrl);
+        navAuthContainer.innerHTML = buildSignedInHTML(name, { hasImage: user.hasImage, imageUrl: user.imageUrl });
         wireSignOutButton(clerkInstance);
-        writeAuthHint({ signedIn: true, name, imageUrl: user.imageUrl });
+        writeAuthHint({ signedIn: true, name, hasImage: user.hasImage, imageUrl: user.imageUrl });
         reveal();
       }
 
