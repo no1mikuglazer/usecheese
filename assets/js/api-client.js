@@ -33,27 +33,42 @@ class CheeseApiError extends Error {
   }
 }
 
+/* usecheese.xyz and api.usecheese.xyz are different ORIGINS, even though
+   they share a registrable domain — and per Clerk's own docs, a session
+   cookie is only forwarded automatically for same-origin requests. Cross-
+   origin, the session has to be sent explicitly as an Authorization: Bearer
+   token instead; the cookie approach (credentials: 'include' alone, no
+   header) silently 401ed on every request despite a real, valid, correctly-
+   scoped session cookie actually being attached — confirmed live, by
+   sending a real signed-in user's own session token directly and getting
+   back their real data, while the exact same session via cookie alone kept
+   failing. getToken() returns null (not a rejected promise) when nobody's
+   signed in, so this is a safe no-op until Clerk has actually loaded and a
+   session exists. */
+async function getAuthHeader() {
+  if (!window.cheeseClerk || !window.cheeseClerk.session) return {};
+  try {
+    const token = await window.cheeseClerk.session.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 async function cheeseApiRequest(path, options = {}) {
   let response;
 
   const { body: requestBody, ...rest } = options;
 
   try {
-    // credentials: 'include' — without it, the browser never attaches
-    // Clerk's session cookie on this cross-subdomain request (usecheese.xyz
-    // calling api.usecheese.xyz), and every request looks signed-out no
-    // matter what the server's CORS config allows. Harmless on endpoints
-    // that don't care who's signed in; there just isn't a cookie to send
-    // before anyone has signed in at all.
+    const authHeader = await getAuthHeader();
+    const contentTypeHeader = requestBody !== undefined ? { "Content-Type": "application/json" } : {};
+
     response = await fetch(CHEESE_API_BASE + path, {
       credentials: "include",
       ...rest,
-      ...(requestBody !== undefined
-        ? {
-            headers: { "Content-Type": "application/json", ...rest.headers },
-            body: JSON.stringify(requestBody),
-          }
-        : {}),
+      headers: { ...authHeader, ...contentTypeHeader, ...rest.headers },
+      ...(requestBody !== undefined ? { body: JSON.stringify(requestBody) } : {}),
     });
   } catch (networkError) {
     // fetch() only rejects on network-level failures — the server being down,
