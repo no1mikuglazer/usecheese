@@ -37,7 +37,13 @@ async function cheeseApiRequest(path) {
   let response;
 
   try {
-    response = await fetch(CHEESE_API_BASE + path);
+    // credentials: 'include' — without it, the browser never attaches
+    // Clerk's session cookie on this cross-subdomain request (usecheese.xyz
+    // calling api.usecheese.xyz), and every request looks signed-out no
+    // matter what the server's CORS config allows. Harmless on endpoints
+    // that don't care who's signed in; there just isn't a cookie to send
+    // before anyone has signed in at all.
+    response = await fetch(CHEESE_API_BASE + path, { credentials: "include" });
   } catch (networkError) {
     // fetch() only rejects on network-level failures — the server being down,
     // DNS failure, or CORS blocking the request.

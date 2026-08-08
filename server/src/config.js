@@ -54,6 +54,12 @@ export const config = {
   // "Why the user database is a separate file" in README.md.
   usersDbPath: resolveDbPath(readEnv("USERS_DB_PATH"), "./data/cheese-users.sqlite"),
   corsOrigins: parseOrigins(readEnv("CORS_ORIGINS")),
+  // Read (and trimmed, like everything else here) through config rather than
+  // left for @clerk/express to pull raw from process.env — clerkMiddleware()
+  // is mounted with no explicit options below, so it reads these same two
+  // env var names itself; this is only for the fail-fast check.
+  clerkSecretKey: readEnv("CLERK_SECRET_KEY"),
+  clerkPublishableKey: readEnv("CLERK_PUBLISHABLE_KEY"),
   serverRoot,
 };
 
@@ -64,5 +70,11 @@ config.isProduction = config.env === "production";
 if (config.isProduction && config.corsOrigins.length === 0) {
   throw new Error(
     "CORS_ORIGINS must be set in production (comma-separated list of allowed frontend origins)",
+  );
+}
+
+if (config.isProduction && (!config.clerkSecretKey || !config.clerkPublishableKey)) {
+  throw new Error(
+    "CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY must both be set in production",
   );
 }

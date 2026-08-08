@@ -18,4 +18,8 @@ export class ApiError extends Error {
   static notFound(code, details) {
     return new ApiError(404, code, details);
   }
+
+  static unauthorized(code, details) {
+    return new ApiError(401, code, details);
+  }
 }

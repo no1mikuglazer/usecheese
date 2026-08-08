@@ -15,6 +15,7 @@
     "init:users-db": "node scripts/init-users-db.js"
   },
   "dependencies": {
+    "@clerk/express": "^2.1.52",
     "better-sqlite3": "^13.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
