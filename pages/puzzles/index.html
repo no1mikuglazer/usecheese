@@ -259,14 +259,12 @@
       <div class="sidebar">
         <div class="pz-panel">
 
-          <!-- HEADER -->
+          <!-- HEADER — signed-out: puzzle count (today's behavior). Signed-in:
+               the user's own persisted rating, shown directly with no label,
+               plus a +N/-N popup anchored to it after each solve. See
+               pages/puzzles/script.js. -->
           <div class="pz-panel-header">
-            <h1 class="pz-panel-title">Puzzles</h1>
-            <!-- Signed-out: puzzle count (today's behavior). Signed-in: the
-                 user's own persisted rating, with a +N/-N popup anchored to
-                 it after each solve — see pages/puzzles/script.js. -->
             <div class="pz-header-stat" id="pzHeaderStat">
-              <span class="pz-header-stat-label" id="pzHeaderStatLabel" hidden>Rating</span>
               <span class="pz-header-stat-value" id="pzTotalCount">&nbsp;</span>
               <span class="pz-rating-popup" id="pzRatingPopup"></span>
             </div>

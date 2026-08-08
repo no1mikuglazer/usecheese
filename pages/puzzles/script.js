@@ -188,7 +188,6 @@ const solvedCountEl = document.getElementById("pzSolvedCount");
 const attemptCountEl = document.getElementById("pzAttemptCount");
 const streakCountEl = document.getElementById("pzStreakCount");
 const headerStatEl = document.getElementById("pzHeaderStat");
-const headerStatLabelEl = document.getElementById("pzHeaderStatLabel");
 const ratingPopupEl = document.getElementById("pzRatingPopup");
 const sparklineSectionEl = document.getElementById("pzSparkline");
 const sparklineLineEl = document.getElementById("pzSparklineLine");
@@ -488,9 +487,10 @@ function drawSparkline() {
   sparklineDotEl.classList.add(lastDelta < 0 ? "pz-sparkline-dot-down" : "pz-sparkline-dot-up");
 }
 
-// Signed-out (or not-yet-confirmed): today's behavior, puzzle count in the header.
+// Signed-out (or not-yet-confirmed, or a failed rating fetch — see the Boot
+// section for why this is also the fallback there): today's behavior,
+// puzzle count in the header.
 function showPuzzleCountMode() {
-  headerStatLabelEl.hidden = true;
   headerStatEl.classList.remove("pz-header-stat-rating");
   sparklineSectionEl.hidden = true;
   ratingHistory = [];
@@ -504,9 +504,9 @@ function showPuzzleCountMode() {
     });
 }
 
-// Signed-in, confirmed: the user's own persisted rating replaces the puzzle count.
+// Signed-in, confirmed: the user's own persisted rating replaces the puzzle
+// count, shown directly with no label.
 function showRatingMode(stats) {
-  headerStatLabelEl.hidden = false;
   headerStatEl.classList.add("pz-header-stat-rating");
   sparklineSectionEl.hidden = false;
   totalCountEl.textContent = String(stats.rating);
@@ -1259,40 +1259,36 @@ updateSessionDisplay();
 
 // readAuthHint() is defined by assets/js/clerk-client.js, loaded before this
 // file on every page that carries the nav — reused as-is rather than
-// duplicating it here. The optimistic read lets a returning signed-in user
-// see their rating immediately, before Clerk's own network-bound session
-// check resolves; window.cheeseClerkReady below corrects it if the cached
-// guess was wrong (same pattern clerk-client.js already uses for the nav).
+// duplicating it here. Unlike the nav (which caches the actual name/avatar
+// and can paint real content immediately), there is no cached rating value
+// here — so the "optimistic" step only pre-applies the bigger rating font
+// class to avoid a layout jump, leaving the number itself blank. The real
+// number always comes from exactly one authoritative fetch, triggered once
+// window.cheeseClerkReady resolves — never from a separate optimistic fetch
+// racing against it. An earlier version fired an optimistic fetch here too
+// and skipped the confirmed one whenever the hint "already matched," which
+// meant a transient failure of that first fetch (page load, cookie not yet
+// settled) left the header stuck blank forever with nothing to retry it.
 const authHint = readAuthHint();
 
 if (authHint && authHint.signedIn) {
   isSignedIn = true;
-  headerStatLabelEl.hidden = false;
   headerStatEl.classList.add("pz-header-stat-rating");
-  totalCountEl.textContent = "—";
-  fetchMyPuzzleProfile()
-    .then((user) => {
-      if (isSignedIn) showRatingMode(user.puzzleStats);
-    })
-    .catch(() => {});
 } else {
   showPuzzleCountMode();
 }
 
 window.cheeseClerkReady
   .then((clerkInstance) => {
-    const reallySignedIn = !!clerkInstance.user;
-    if (reallySignedIn === isSignedIn) return; // hint already matched reality
-
-    isSignedIn = reallySignedIn;
-    if (reallySignedIn) {
+    isSignedIn = !!clerkInstance.user;
+    if (isSignedIn) {
       fetchMyPuzzleProfile()
         .then((user) => showRatingMode(user.puzzleStats))
-        .catch(() => {});
+        .catch(() => showPuzzleCountMode()); // degrade rather than stay blank
     } else {
       showPuzzleCountMode();
     }
   })
-  .catch(() => {});
+  .catch(() => showPuzzleCountMode());
 
 loadNewPuzzle();

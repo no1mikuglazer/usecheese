@@ -228,40 +228,19 @@ body {
 .pz-panel-header {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
     padding-bottom: clamp(8px, 1.2vh, 14px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.pz-panel-title {
-    font-size: clamp(20px, 1.7vw, 28px);
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    color: #eef1f8;
-}
-
-.pz-panel-count {
-    font-size: clamp(11px, 0.85vw, 13px);
-    color: rgba(233, 238, 246, 0.45);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-/* HEADER STAT (puzzle count, signed-out — or the user's own rating, signed-in) */
+/* HEADER STAT — puzzle count, signed-out; the user's own rating, signed-in.
+   This is now the whole header, shown directly with no label — see the
+   puzzle-rating plan for why the earlier "Puzzles" title + separate label
+   were removed. */
 
 .pz-header-stat {
     position: relative;
     display: flex;
     align-items: baseline;
-    gap: 6px;
-}
-
-.pz-header-stat-label {
-    font-size: clamp(10px, 0.72vw, 11px);
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    color: rgba(233, 238, 246, 0.42);
 }
 
 .pz-header-stat-value {
@@ -271,10 +250,12 @@ body {
     white-space: nowrap;
 }
 
-/* Signed-in rating reads heavier than the plain puzzle-count text it replaces. */
+/* Signed-in rating reads as the page's headline number, replacing the
+   "Puzzles" title that used to occupy this spot. */
 .pz-header-stat-rating .pz-header-stat-value {
-    font-size: clamp(15px, 1.2vw, 19px);
+    font-size: clamp(20px, 1.7vw, 28px);
     font-weight: 800;
+    letter-spacing: 0.4px;
     color: #eef1f8;
 }
 
@@ -313,6 +294,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+/* Same CSS-specificity fix already needed once before for .auth-form: the
+   UA stylesheet's [hidden]{display:none} ties with .pz-sparkline{display:flex}
+   above, and author CSS wins ties — so the `hidden` attribute alone did NOT
+   hide this section. Without this, the sparkline rendered anyway while
+   "hidden" (default cx/cy=0, undrawn polyline), showing as a stray dot at
+   the section's top-left corner in both auth states. */
+.pz-sparkline[hidden] {
+    display: none;
 }
 
 .pz-sparkline-svg {
