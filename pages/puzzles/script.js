@@ -187,6 +187,55 @@ function showSignupGate() {
     });
 }
 
+// A separate, one-time flag from the count itself — deliberately not reusing
+// or overloading ANON_PUZZLE_COUNT_KEY, so "have they been told about the
+// limit" and "how many have they used" stay two independent, unambiguous
+// pieces of state rather than one doing double duty.
+const ANON_INTRO_SEEN_KEY = "cheeseAnonIntroSeen";
+
+function markAnonIntroSeen() {
+  try {
+    localStorage.setItem(ANON_INTRO_SEEN_KEY, "1");
+  } catch (e) {
+    // Can't persist it — better to risk not showing it again than to show it
+    // on every single load for someone in private mode.
+  }
+}
+
+// Friendly, proactive heads-up — distinct from showSignupGate(), which is
+// reactive (shown only once the limit is actually hit). Shown at most once
+// ever per browser, and only to a visitor who still has puzzles left: if
+// they're already at the limit, showSignupGate() already covers informing
+// them, and stacking this on top of that would be redundant. Called only
+// once Clerk has confirmed signed-out (see the Boot section) — never on the
+// earlier optimistic guess, so a real signed-in user can never see it during
+// the brief window before that confirmation arrives.
+function maybeShowAnonIntro() {
+  let alreadySeen;
+  try {
+    alreadySeen = !!localStorage.getItem(ANON_INTRO_SEEN_KEY);
+  } catch (e) {
+    return; // can't read storage — skip rather than risk showing it every load
+  }
+  if (alreadySeen) return;
+
+  markAnonIntroSeen();
+  if (getAnonPuzzleCount() >= ANON_PUZZLE_LIMIT) return;
+
+  cheeseDialogs
+    .showConfirm(
+      "For now, you can solve 5 puzzles for free without an account. Sign up any time to unlock the full puzzle experience.",
+      {
+        title: "Enjoying the puzzles? \u{1F9C0}",
+        confirmLabel: "Sign Up",
+        cancelLabel: "Got it",
+      },
+    )
+    .then((goSignUp) => {
+      if (goSignUp) window.location.href = "../signup/index.html";
+    });
+}
+
 // Timers are tracked so a new puzzle never gets interrupted by a reply
 // scheduled for the previous one.
 let pendingTimers = [];
@@ -488,21 +537,17 @@ function updateSessionDisplay() {
   streakCountEl.textContent = String(session.streak);
 }
 
-// ── Rating display (signed-in only) ─────────────────────────────────────
+// ── Header stat display ──────────────────────────────────────────────────
 
-// Signed-out (or not-yet-confirmed, or a failed rating fetch — see the Boot
-// section for why this is also the fallback there): today's behavior,
-// puzzle count in the header.
-function showPuzzleCountMode() {
+// Signed-out (or not yet confirmed): how many of the free puzzles are left,
+// derived straight from the same counter loadNewPuzzle() already maintains —
+// no separate fetch, no separate count kept anywhere else. Replaces the
+// header's old "N puzzles" library-size text, which wasn't actionable
+// information for exactly the visitor this now serves.
+function updateAnonRemainingDisplay() {
   headerStatEl.classList.remove("pz-header-stat-rating");
-
-  fetchPuzzleStats()
-    .then((stats) => {
-      totalCountEl.textContent = `${stats.count.toLocaleString()} puzzles`;
-    })
-    .catch(() => {
-      totalCountEl.textContent = "";
-    });
+  const remaining = Math.max(0, ANON_PUZZLE_LIMIT - getAnonPuzzleCount());
+  totalCountEl.textContent = `${remaining} puzzle${remaining === 1 ? "" : "s"} remaining`;
 }
 
 // Signed-in, confirmed: the user's own persisted rating replaces the puzzle
@@ -510,6 +555,15 @@ function showPuzzleCountMode() {
 function showRatingMode(stats) {
   headerStatEl.classList.add("pz-header-stat-rating");
   totalCountEl.textContent = String(stats.rating);
+}
+
+// Confirmed signed-in, but fetching their rating failed (network blip, API
+// hiccup) — NOT the same situation as being signed-out, so this must never
+// fall back to updateAnonRemainingDisplay(): a real signed-in user briefly
+// seeing "0 puzzles remaining" would be actively misleading, not just blank.
+function showBlankHeaderMode() {
+  headerStatEl.classList.remove("pz-header-stat-rating");
+  totalCountEl.textContent = "";
 }
 
 // Ticks the header number from its last value to the new one over ~600ms
@@ -925,7 +979,10 @@ async function loadNewPuzzle() {
     // Counts against the free limit here — a genuinely new puzzle actually
     // being shown — not in setupPuzzle(), which retryPuzzle() also calls for
     // the SAME puzzle and must not count twice.
-    if (!isSignedIn) incrementAnonPuzzleCount();
+    if (!isSignedIn) {
+      incrementAnonPuzzleCount();
+      updateAnonRemainingDisplay();
+    }
 
     setupPuzzle(puzzle);
   } catch (err) {
@@ -1278,7 +1335,7 @@ if (authHint && authHint.signedIn) {
   isSignedIn = true;
   headerStatEl.classList.add("pz-header-stat-rating");
 } else {
-  showPuzzleCountMode();
+  updateAnonRemainingDisplay();
 }
 
 window.cheeseClerkReady
@@ -1287,11 +1344,15 @@ window.cheeseClerkReady
     if (isSignedIn) {
       fetchMyPuzzleProfile()
         .then((user) => showRatingMode(user.puzzleStats))
-        .catch(() => showPuzzleCountMode()); // degrade rather than stay blank
+        .catch(() => showBlankHeaderMode()); // degrade rather than mislead
     } else {
-      showPuzzleCountMode();
+      updateAnonRemainingDisplay();
+      // Only once Clerk has actually confirmed signed-out — never on the
+      // earlier optimistic guess, which could still turn out to be a
+      // signed-in user on a rare cold-boot-with-no-cached-hint visit.
+      maybeShowAnonIntro();
     }
   })
-  .catch(() => showPuzzleCountMode());
+  .catch(() => updateAnonRemainingDisplay());
 
 loadNewPuzzle();
