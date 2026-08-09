@@ -143,6 +143,50 @@ let isSignedIn = false;
 // move or a hint) can't be replayed for repeat clean-solve reward.
 const scoredPuzzleIds = new Set();
 
+// ── Anonymous puzzle gate ────────────────────────────────────────────────
+// Signed-out visitors get ANON_PUZZLE_LIMIT puzzles, then a signup nudge
+// instead of a new one — a soft, client-side counter, not access control.
+// It is trivially bypassed by clearing localStorage or opening a private
+// window; that's an accepted limitation (see the roadmap), not a bug.
+// Persisted in localStorage (not sessionStorage) so it survives a reload —
+// the whole point is that reloading isn't a free reset, even though other,
+// less casual ways around it exist.
+const ANON_PUZZLE_LIMIT = 5;
+const ANON_PUZZLE_COUNT_KEY = "cheeseAnonPuzzleCount";
+
+function getAnonPuzzleCount() {
+  const raw = localStorage.getItem(ANON_PUZZLE_COUNT_KEY);
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function incrementAnonPuzzleCount() {
+  try {
+    localStorage.setItem(ANON_PUZZLE_COUNT_KEY, String(getAnonPuzzleCount() + 1));
+  } catch (e) {
+    // Private mode / quota exceeded — the count just won't persist, same
+    // fallback posture as clerk-client.js's own writeAuthHint().
+  }
+}
+
+// cheeseDialogs is defined by assets/js/cheese-dialogs.js, already loaded
+// by Analysis/Training for the same blocking-dialog needs — reused as-is
+// rather than building new modal markup for this one prompt.
+function showSignupGate() {
+  cheeseDialogs
+    .showConfirm(
+      "You've used your 5 free puzzles. Sign up to keep training — it's free.",
+      {
+        title: "That's your free puzzles for now",
+        confirmLabel: "Sign Up",
+        cancelLabel: "Maybe Later",
+      },
+    )
+    .then((goSignUp) => {
+      if (goSignUp) window.location.href = "../signup/index.html";
+    });
+}
+
 // Timers are tracked so a new puzzle never gets interrupted by a reply
 // scheduled for the previous one.
 let pendingTimers = [];
@@ -853,6 +897,11 @@ async function takePrefetchedPuzzle(min, max) {
 }
 
 async function loadNewPuzzle() {
+  if (!isSignedIn && getAnonPuzzleCount() >= ANON_PUZZLE_LIMIT) {
+    showSignupGate();
+    return;
+  }
+
   const token = ++activeLoadToken;
 
   cancelPendingSteps();
@@ -872,6 +921,11 @@ async function loadNewPuzzle() {
     // the first load this is already settled and adds nothing.
     await piecesReady;
     if (token !== activeLoadToken) return; // superseded while assets loaded
+
+    // Counts against the free limit here — a genuinely new puzzle actually
+    // being shown — not in setupPuzzle(), which retryPuzzle() also calls for
+    // the SAME puzzle and must not count twice.
+    if (!isSignedIn) incrementAnonPuzzleCount();
 
     setupPuzzle(puzzle);
   } catch (err) {
