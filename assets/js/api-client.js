@@ -23,13 +23,16 @@ const CHEESE_API_BASE =
 
 /* Thrown for any non-2xx response. `code` carries the server's stable error
    code (e.g. "no_puzzles_in_range") so callers can branch on it instead of
-   matching on message text. */
+   matching on message text. `details` mirrors whatever the server's
+   ApiError carried (e.g. { availableAt } on "username_change_too_soon") —
+   undefined when the server sent none. */
 class CheeseApiError extends Error {
-  constructor(status, code, message) {
+  constructor(status, code, message, details) {
     super(message || code || `Request failed (${status})`);
     this.name = "CheeseApiError";
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -87,6 +90,8 @@ async function cheeseApiRequest(path, options = {}) {
     throw new CheeseApiError(
       response.status,
       body && body.error ? body.error : "request_failed",
+      undefined,
+      body && body.details,
     );
   }
 
@@ -126,4 +131,26 @@ function submitPuzzleResult(puzzleId, failed, usedHint) {
     method: "POST",
     body: { puzzleId, failed, usedHint },
   });
+}
+
+/* The curated banner/opening lists the edit form's pickers are built from —
+   see server/src/lib/profileOptions.js, the single source of truth both
+   this and the server's own PATCH validation read from. Public, no auth. */
+function fetchProfileOptions() {
+  return cheeseApiRequest("/users/profile-options");
+}
+
+/* Any profile by username — identity, customization, stats, and the
+   derived insight sections (recent activity, rating history, theme
+   breakdown) in one response. Public, no auth — 404s (as a CheeseApiError
+   with code "user_not_found") for an unknown username. */
+function fetchPublicProfile(username) {
+  return cheeseApiRequest("/users/" + encodeURIComponent(username));
+}
+
+/* Updates any of username/banner/favoriteOpening for the signed-in user.
+   Requires a real session — 401s otherwise. A too-soon username change
+   comes back as a CheeseApiError with code "username_change_too_soon". */
+function updateMyProfile(patch) {
+  return cheeseApiRequest("/users/me", { method: "PATCH", body: patch });
 }

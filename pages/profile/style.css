@@ -1,0 +1,639 @@
+/* Cheese — Profile page
+   Nav styling comes from assets/css/nav.css, dialog styling from
+   assets/css/cheese-dialogs.css (the avatar-upload failure alert reuses
+   it). Everything else here is specific to this page. */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    background-image: url("../../assets/backgrounds/custom_bg1.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+.pr-container {
+    margin-left: 220px;
+    min-height: 100vh;
+    padding: 40px 48px 72px 48px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* The real content (banner, edit panel, stat cards, sections) lives inside
+   .pr-page, one level below .pr-container — its own flex layout is what
+   actually spaces those children, not .pr-container's (which only ever
+   has two possible children: .pr-status or .pr-page). */
+.pr-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* =====================
+   LOADING / NOT-FOUND STATUS
+   ===================== */
+
+.pr-status {
+    max-width: 480px;
+    margin: 15vh auto 0 auto;
+    padding: 22px 26px;
+    text-align: center;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(13, 16, 22, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4);
+}
+
+.pr-status a {
+    color: #fff;
+    font-weight: 700;
+}
+
+.pr-page[hidden],
+.pr-status[hidden] { display: none; }
+
+/* =====================
+   BANNER
+   ===================== */
+
+.pr-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 30px 34px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(22px) saturate(130%);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+    background: rgba(13, 16, 22, 0.86);
+}
+
+/* Banner variants — a subtle diagonal tint over the same dark glass base,
+   never a bold solid block. Keys only (never raw CSS) come from the
+   server's profileOptions.js; these are the frontend's own mapping of
+   each key to an actual gradient, reusing hues already established
+   elsewhere in the app rather than inventing a new palette. "default"
+   needs its own explicit rule too — both the swatch buttons and the live
+   banner get "pr-banner-" + key applied uniformly for every key including
+   "default" (see script.js), and without this it fell through to the
+   browser's native unstyled button background instead of matching. */
+.pr-banner-default { background: rgba(13, 16, 22, 0.9); }
+.pr-banner-blue   { background: linear-gradient(135deg, rgba(96, 165, 250, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-green  { background: linear-gradient(135deg, rgba(88, 200, 120, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-purple { background: linear-gradient(135deg, rgba(167, 139, 250, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-amber  { background: linear-gradient(135deg, rgba(255, 205, 92, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-rose   { background: linear-gradient(135deg, rgba(232, 80, 62, 0.20), rgba(13, 16, 22, 0.88)); }
+
+.pr-banner-identity {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+}
+
+.pr-avatar {
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    background-size: cover;
+    background-position: center;
+    padding: 0;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: Arial, sans-serif;
+    user-select: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Same glass-tile default recipe as the sidebar's .left-nav-account-avatar-default
+   (translucent fill + backdrop-blur + soft border), just sized for the banner. */
+.pr-avatar-default {
+    backdrop-filter: blur(6px) saturate(130%);
+    -webkit-backdrop-filter: blur(6px) saturate(130%);
+}
+
+/* Own-profile, edit mode: the avatar becomes a real button with a hover hint. */
+.pr-avatar-editable {
+    cursor: pointer;
+    position: relative;
+}
+
+.pr-avatar-editable::after {
+    content: "Change";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 15px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.pr-avatar-editable:hover::after {
+    opacity: 1;
+}
+
+.pr-identity-text {
+    min-width: 0;
+}
+
+.pr-username-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pr-username {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pr-username-input {
+    font-size: 22px;
+    font-weight: 800;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    padding: 6px 10px;
+    outline: none;
+    max-width: 280px;
+}
+
+.pr-username-input:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.pr-username-input[hidden] { display: none; }
+
+.pr-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.pr-opening-tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+.pr-member-since {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.pr-edit-btn {
+    flex-shrink: 0;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    transition: background 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+
+.pr-edit-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+.pr-edit-btn[hidden] { display: none; }
+
+.pr-edit-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Same [hidden]-vs-author-CSS specificity tie already hit (and fixed) twice
+   before in this codebase — .pr-edit-actions{display:flex} above ties with
+   the UA stylesheet's [hidden]{display:none}, and author CSS wins ties. */
+.pr-edit-actions[hidden] { display: none; }
+
+.pr-edit-btn-primary {
+    background: rgba(96, 165, 250, 0.28);
+    border-color: rgba(96, 165, 250, 0.5);
+}
+
+.pr-edit-btn-primary:hover {
+    background: rgba(96, 165, 250, 0.4);
+}
+
+.pr-edit-btn-ghost {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* =====================
+   EDIT PANEL
+   ===================== */
+
+.pr-edit-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    padding: 22px 26px;
+    border-radius: 16px;
+    background: rgba(13, 16, 22, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(18px) saturate(130%);
+    -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.pr-edit-panel[hidden] { display: none; }
+
+.pr-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pr-edit-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.pr-banner-picker {
+    display: flex;
+    gap: 8px;
+}
+
+.pr-banner-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    /* A permanent faint edge (independent of the active-state border above)
+       so a dark swatch (default, green, purple) stays distinguishable from
+       the equally-dark picker background even when not selected. */
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.pr-banner-swatch:hover {
+    transform: translateY(-2px);
+}
+
+.pr-banner-swatch-active {
+    border-color: rgba(255, 255, 255, 0.85);
+}
+
+.pr-select {
+    font-family: Arial, sans-serif;
+    font-size: 13.5px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    padding: 9px 12px;
+    outline: none;
+    min-width: 220px;
+}
+
+.pr-select:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pr-edit-error {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(180, 40, 40, 0.18);
+    border: 1px solid rgba(255, 120, 120, 0.35);
+    color: rgba(255, 170, 170, 1);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.pr-edit-error[hidden] { display: none; }
+
+/* =====================
+   STAT CARDS
+   ===================== */
+
+.pr-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+}
+
+.pr-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 18px 14px;
+    border-radius: 14px;
+    background: rgba(13, 16, 22, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    text-decoration: none;
+    transition: transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1), border-color 0.18s ease;
+}
+
+a.pr-stat-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.pr-stat-card-static { cursor: default; }
+
+.pr-stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.pr-stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+/* =====================
+   SECTIONS (shared shell)
+   ===================== */
+
+.pr-section {
+    padding: 26px 30px;
+    border-radius: 16px;
+    background: rgba(13, 16, 22, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    backdrop-filter: blur(20px) saturate(130%);
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4);
+    scroll-margin-top: 24px;
+}
+
+.pr-section-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f2f5fb;
+    margin-bottom: 18px;
+}
+
+.pr-chart-empty,
+.pr-activity-empty,
+.pr-insights-empty {
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.6;
+}
+
+.pr-chart-empty[hidden],
+.pr-activity-empty[hidden],
+.pr-insights-empty[hidden],
+.pr-chart-wrap[hidden],
+.pr-insights-grid[hidden] { display: none; }
+
+/* =====================
+   RATING CHART
+   ===================== */
+
+.pr-chart-wrap {
+    position: relative;
+}
+
+.pr-chart-svg {
+    width: 100%;
+    height: 200px;
+    display: block;
+    overflow: visible;
+}
+
+.pr-chart-area {
+    fill: rgba(96, 165, 250, 0.10);
+    stroke: none;
+}
+
+.pr-chart-line {
+    fill: none;
+    stroke: #60a5fa;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.pr-chart-crosshair {
+    stroke: rgba(255, 255, 255, 0.25);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pr-chart-dot {
+    fill: #60a5fa;
+    stroke: #0d1016;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pr-chart-tooltip {
+    position: absolute;
+    top: 0;
+    transform: translate(-50%, -110%);
+    padding: 7px 11px;
+    border-radius: 8px;
+    background: rgba(20, 20, 22, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.pr-chart-tooltip[hidden] { display: none; }
+
+.pr-chart-tooltip-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.pr-chart-tooltip-date {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 1px;
+}
+
+/* =====================
+   RECENT ACTIVITY
+   ===================== */
+
+.pr-activity-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.pr-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pr-activity-item:last-child { border-bottom: none; }
+
+.pr-activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.pr-activity-dot-correct { background: #58c878; box-shadow: 0 0 8px rgba(88, 200, 120, 0.6); }
+.pr-activity-dot-wrong   { background: #e8503e; box-shadow: 0 0 8px rgba(232, 80, 62, 0.6); }
+
+.pr-activity-themes {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pr-activity-rating {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.45);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.pr-activity-delta {
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 40px;
+    text-align: right;
+}
+
+.pr-activity-delta-up { color: #58c878; }
+.pr-activity-delta-down { color: #e8503e; }
+
+/* =====================
+   STRENGTHS & WEAKNESSES
+   ===================== */
+
+.pr-insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+}
+
+.pr-insights-subtitle {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.pr-insights-subtitle-good { color: #58c878; }
+.pr-insights-subtitle-bad { color: #e8503e; }
+
+.pr-theme-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pr-theme-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13.5px;
+}
+
+.pr-theme-name {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.pr-theme-rate {
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+    font-variant-numeric: tabular-nums;
+}
+
+/* =====================
+   RESPONSIVE — light touch; viewports at/below 768px are covered by the
+   site-wide mobile gate, so no dedicated mobile layout is needed here.
+   ===================== */
+
+@media (max-width: 1100px) {
+    .pr-stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 860px) {
+    .pr-container { padding: 34px 32px 56px 32px; }
+    .pr-insights-grid { grid-template-columns: 1fr; }
+    .pr-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}

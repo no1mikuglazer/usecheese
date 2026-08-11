@@ -287,7 +287,10 @@ a.left-nav-item-link:hover {
 
 /* SIGNED-IN ACCOUNT ROW — replaces the two buttons above once a real Clerk
    session exists (assets/js/clerk-client.js swaps .left-nav-auth's content).
-   Square avatar, not circular — corrected after an earlier circular preview. */
+   Square avatar, not circular — corrected after an earlier circular preview.
+   Now a real link to the profile page (Stage 5) — text-decoration/color
+   reset the same way a.left-nav-item already is, plus its own hover state
+   since it isn't part of that selector's shared rule. */
 
 .left-nav-account {
     display: flex;
@@ -295,6 +298,14 @@ a.left-nav-item-link:hover {
     gap: 10px;
     padding: 8px;
     margin-bottom: 4px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.16s ease;
+}
+
+.left-nav-account:hover {
+    background: rgba(255, 255, 255, 0.07);
 }
 
 .left-nav-account-avatar {

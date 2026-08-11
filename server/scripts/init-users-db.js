@@ -55,13 +55,29 @@ function parseArgs(argv) {
   return args;
 }
 
+// See src/db/usersConnection.js's identical guard for why: SQLite has no
+// "ADD COLUMN IF NOT EXISTS", so a database that predates a given column
+// needs this explicit, idempotent ALTER TABLE instead.
+function ensureColumn(db, table, column, ddl) {
+  const hasColumn = db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all()
+    .some((c) => c.name === column);
+
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+
 function createSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       clerk_user_id       TEXT PRIMARY KEY,
       username             TEXT NOT NULL UNIQUE,
       username_changed_at  TEXT,
-      created_at            TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+      banner                TEXT,
+      favorite_opening      TEXT
     );
 
     CREATE TABLE IF NOT EXISTS puzzle_stats (
@@ -74,9 +90,9 @@ function createSchema(db) {
       rating          INTEGER NOT NULL DEFAULT 200
     );
 
-    -- See src/db/usersConnection.js's identical table for why: pure data
-    -- collection ahead of a future stats/improvement-areas feature, nothing
-    -- reads it yet.
+    -- See src/db/usersConnection.js's identical table for why: powers the
+    -- profile page's recent-activity list, rating chart (rating_after), and
+    -- strengths/weaknesses breakdown (themes).
     CREATE TABLE IF NOT EXISTS puzzle_attempts (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       clerk_user_id  TEXT NOT NULL REFERENCES users(clerk_user_id),
@@ -86,23 +102,17 @@ function createSchema(db) {
       failed         INTEGER NOT NULL,
       used_hint      INTEGER NOT NULL,
       rating_delta   INTEGER NOT NULL,
-      attempted_at   TEXT NOT NULL DEFAULT (datetime('now'))
+      attempted_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      rating_after   INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
   `);
 
-  // See src/db/usersConnection.js's identical guard for why: SQLite has no
-  // "ADD COLUMN IF NOT EXISTS", so a database that predates `rating` needs
-  // this explicit, idempotent ALTER TABLE instead.
-  const hasRatingColumn = db
-    .prepare("PRAGMA table_info(puzzle_stats)")
-    .all()
-    .some((column) => column.name === "rating");
-
-  if (!hasRatingColumn) {
-    db.exec("ALTER TABLE puzzle_stats ADD COLUMN rating INTEGER NOT NULL DEFAULT 200");
-  }
+  ensureColumn(db, "puzzle_stats", "rating", "rating INTEGER NOT NULL DEFAULT 200");
+  ensureColumn(db, "users", "banner", "banner TEXT");
+  ensureColumn(db, "users", "favorite_opening", "favorite_opening TEXT");
+  ensureColumn(db, "puzzle_attempts", "rating_after", "rating_after INTEGER");
 }
 
 function main() {

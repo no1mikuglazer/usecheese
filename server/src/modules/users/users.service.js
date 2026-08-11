@@ -12,6 +12,24 @@ import { clerkClient } from "@clerk/express";
 import { getUsersDb } from "../../db/usersConnection.js";
 import { getPuzzleById } from "../puzzles/puzzles.service.js";
 import { computeRatingDelta } from "../../lib/puzzleRating.js";
+import { BANNER_KEYS, OPENING_NAMES } from "../../lib/profileOptions.js";
+import { ApiError } from "../../lib/ApiError.js";
+
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const RECENT_ACTIVITY_LIMIT = 15;
+const MIN_THEME_ATTEMPTS = 5;
+
+// Lichess mixes game-phase, length, and evaluation descriptors in with real
+// tactical motifs — none of these describe a *skill*, so "weak at short
+// puzzles" or "weak at middlegame" would be meaningless noise in the
+// strengths/weaknesses breakdown. Deliberately does NOT exclude "mate"/
+// "mateIn2" etc. — finding forced mates is a real, trackable skill.
+const NON_MOTIF_THEMES = new Set([
+  "short", "long", "oneMove", "veryLong",
+  "advantage", "crushing", "equality",
+  "middlegame", "endgame", "opening",
+  "master", "masterVsMaster", "superGM",
+]);
 
 let statements = null;
 
@@ -21,7 +39,14 @@ function getStatements() {
   const db = getUsersDb();
   statements = {
     byClerkId: db.prepare("SELECT * FROM users WHERE clerk_user_id = ?"),
+    byUsername: db.prepare("SELECT * FROM users WHERE username = ?"),
     insertUser: db.prepare("INSERT INTO users (clerk_user_id, username) VALUES (?, ?)"),
+    updateUsername: db.prepare(
+      "UPDATE users SET username = ?, username_changed_at = ? WHERE clerk_user_id = ?",
+    ),
+    updateCustomization: db.prepare(
+      "UPDATE users SET banner = ?, favorite_opening = ? WHERE clerk_user_id = ?",
+    ),
     statsByClerkId: db.prepare("SELECT * FROM puzzle_stats WHERE clerk_user_id = ?"),
     insertStats: db.prepare("INSERT INTO puzzle_stats (clerk_user_id) VALUES (?)"),
     updateStats: db.prepare(`
@@ -32,9 +57,26 @@ function getStatements() {
     `),
     insertAttempt: db.prepare(`
       INSERT INTO puzzle_attempts
-        (clerk_user_id, puzzle_id, puzzle_rating, themes, failed, used_hint, rating_delta)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+        (clerk_user_id, puzzle_id, puzzle_rating, themes, failed, used_hint, rating_delta,
+         rating_after)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `),
+    recentAttempts: db.prepare(`
+      SELECT puzzle_id, puzzle_rating, themes, failed, used_hint, rating_delta, attempted_at
+      FROM puzzle_attempts
+      WHERE clerk_user_id = ?
+      ORDER BY attempted_at DESC, id DESC
+      LIMIT ?
+    `),
+    ratingHistory: db.prepare(`
+      SELECT rating_after, attempted_at
+      FROM puzzle_attempts
+      WHERE clerk_user_id = ? AND rating_after IS NOT NULL
+      ORDER BY attempted_at ASC, id ASC
+    `),
+    allThemeAttempts: db.prepare(
+      "SELECT themes, failed, used_hint FROM puzzle_attempts WHERE clerk_user_id = ?",
+    ),
   };
   return statements;
 }
@@ -44,6 +86,8 @@ function toApiShape(userRow, statsRow) {
     clerkUserId: userRow.clerk_user_id,
     username: userRow.username,
     createdAt: userRow.created_at,
+    banner: userRow.banner || "default",
+    favoriteOpening: userRow.favorite_opening,
     puzzleStats: {
       rating: statsRow.rating,
       solved: statsRow.solved,
@@ -51,6 +95,50 @@ function toApiShape(userRow, statsRow) {
       currentStreak: statsRow.current_streak,
       bestStreak: statsRow.best_streak,
     },
+  };
+}
+
+function toActivityShape(row) {
+  return {
+    puzzleId: row.puzzle_id,
+    puzzleRating: row.puzzle_rating,
+    themes: row.themes ? row.themes.split(" ").filter(Boolean) : [],
+    correct: !row.failed && !row.used_hint,
+    delta: row.rating_delta,
+    attemptedAt: row.attempted_at,
+  };
+}
+
+// Tallies attempts/solves per real tactical theme, requires MIN_THEME_ATTEMPTS
+// before a theme qualifies (so a single miss can't read as a "weakness"),
+// then takes the extremes by solve rate. Math.max(3, length - 3) as the
+// strengths start index guarantees it can never overlap with the first 3
+// (weaknesses) even when there are fewer than 6 qualifying themes total —
+// it just yields a shorter strengths list instead of double-counting.
+function computeThemeBreakdown(rows) {
+  const tally = new Map();
+
+  for (const row of rows) {
+    if (!row.themes) continue;
+    const correct = !row.failed && !row.used_hint;
+
+    for (const theme of row.themes.split(" ")) {
+      if (!theme || NON_MOTIF_THEMES.has(theme)) continue;
+      const entry = tally.get(theme) || { theme, attempts: 0, solved: 0 };
+      entry.attempts += 1;
+      if (correct) entry.solved += 1;
+      tally.set(theme, entry);
+    }
+  }
+
+  const qualifying = [...tally.values()]
+    .filter((t) => t.attempts >= MIN_THEME_ATTEMPTS)
+    .map((t) => ({ ...t, solveRate: t.solved / t.attempts }))
+    .sort((a, b) => a.solveRate - b.solveRate);
+
+  return {
+    weaknesses: qualifying.slice(0, 3),
+    strengths: qualifying.slice(Math.max(3, qualifying.length - 3)).reverse(),
   };
 }
 
@@ -135,9 +223,10 @@ export async function recordPuzzleResult(clerkUserId, puzzleId, failed, usedHint
       clerkUserId,
     );
 
-    // Pure data collection for a future stats/improvement-areas feature —
-    // nothing reads this table yet. Themes stored space-separated, matching
-    // how the puzzles table itself already stores them (puzzles.service.js).
+    // Themes stored space-separated, matching how the puzzles table itself
+    // already stores them (puzzles.service.js). rating_after is the rating
+    // resulting from THIS attempt — the profile page's rating chart plots
+    // these directly rather than replaying deltas.
     stmts.insertAttempt.run(
       clerkUserId,
       puzzle.id,
@@ -146,6 +235,7 @@ export async function recordPuzzleResult(clerkUserId, puzzleId, failed, usedHint
       failed ? 1 : 0,
       usedHint ? 1 : 0,
       delta,
+      rating,
     );
 
     return stmts.statsByClerkId.get(clerkUserId);
@@ -163,4 +253,109 @@ export async function recordPuzzleResult(clerkUserId, puzzleId, failed, usedHint
       bestStreak: updatedStats.best_streak,
     },
   };
+}
+
+/* Public profile — no auth required, viewable by anyone via username.
+ * Assembles identity, customization, stats, and the three derived
+ * insight sections (recent activity, rating history, theme breakdown)
+ * in one response so the profile page needs exactly one fetch.
+ */
+export async function getPublicProfile(username) {
+  const stmts = getStatements();
+
+  const user = stmts.byUsername.get(username);
+  if (!user) {
+    throw ApiError.notFound("user_not_found");
+  }
+
+  const stats = stmts.statsByClerkId.get(user.clerk_user_id) ?? backfillStats(user.clerk_user_id);
+
+  // Clerk owns the avatar — one call per profile view, same as
+  // getOrCreateUser's first-sight lookup.
+  const clerkUser = await clerkClient.users.getUser(user.clerk_user_id);
+
+  const recentActivity = stmts.recentAttempts
+    .all(user.clerk_user_id, RECENT_ACTIVITY_LIMIT)
+    .map(toActivityShape);
+
+  const ratingHistory = stmts.ratingHistory
+    .all(user.clerk_user_id)
+    .map((row) => ({ rating: row.rating_after, attemptedAt: row.attempted_at }));
+
+  const themeBreakdown = computeThemeBreakdown(stmts.allThemeAttempts.all(user.clerk_user_id));
+
+  return {
+    username: user.username,
+    memberSince: user.created_at,
+    banner: user.banner || "default",
+    favoriteOpening: user.favorite_opening,
+    imageUrl: clerkUser.hasImage ? clerkUser.imageUrl : null,
+    puzzleStats: {
+      rating: stats.rating,
+      solved: stats.solved,
+      attempted: stats.attempted,
+      currentStreak: stats.current_streak,
+      bestStreak: stats.best_streak,
+    },
+    recentActivity,
+    ratingHistory,
+    themeBreakdown,
+  };
+}
+
+/* Applies any of username/banner/favoriteOpening. Username changes hit
+ * Clerk FIRST — it owns uniqueness, and the sidebar/nav read the name from
+ * Clerk's own session, so a local-only change would desync the UI from
+ * what Clerk still thinks is true. Only after Clerk confirms does the local
+ * row (and the 14-day timestamp) update.
+ */
+export async function updateProfile(clerkUserId, patch) {
+  const stmts = getStatements();
+  await getOrCreateUser(clerkUserId); // guarantees both rows exist
+
+  if (patch.banner !== undefined && !BANNER_KEYS.has(patch.banner)) {
+    throw ApiError.badRequest("invalid_banner");
+  }
+  if (
+    patch.favoriteOpening !== undefined &&
+    patch.favoriteOpening !== null &&
+    !OPENING_NAMES.has(patch.favoriteOpening)
+  ) {
+    throw ApiError.badRequest("invalid_opening");
+  }
+
+  if (patch.username !== undefined) {
+    const current = stmts.byClerkId.get(clerkUserId);
+
+    if (current.username_changed_at) {
+      const availableAt = new Date(current.username_changed_at).getTime() + FOURTEEN_DAYS_MS;
+      if (Date.now() < availableAt) {
+        throw ApiError.badRequest("username_change_too_soon", {
+          availableAt: new Date(availableAt).toISOString(),
+        });
+      }
+    }
+
+    try {
+      await clerkClient.users.updateUser(clerkUserId, { username: patch.username });
+    } catch (err) {
+      // Clerk owns uniqueness/format validation — surface its own message
+      // (e.g. "that username is taken") rather than a generic failure.
+      const message = err?.errors?.[0]?.message || "Could not update username";
+      throw ApiError.badRequest("username_update_failed", { message });
+    }
+
+    stmts.updateUsername.run(patch.username, new Date().toISOString(), clerkUserId);
+  }
+
+  if (patch.banner !== undefined || patch.favoriteOpening !== undefined) {
+    const current = stmts.byClerkId.get(clerkUserId);
+    stmts.updateCustomization.run(
+      patch.banner !== undefined ? patch.banner : current.banner,
+      patch.favoriteOpening !== undefined ? patch.favoriteOpening : current.favorite_opening,
+      clerkUserId,
+    );
+  }
+
+  return toApiShape(stmts.byClerkId.get(clerkUserId), stmts.statsByClerkId.get(clerkUserId));
 }

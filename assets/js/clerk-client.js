@@ -109,13 +109,23 @@ if (navAuthContainer) {
   // the avatar is correctly sized even against a stale cached stylesheet
   // from before .left-nav-account-avatar existed — HTML sizing attributes
   // apply before any CSS is parsed.
-  // Not a link yet — there is no profile page to send it to until Stage 5.
+  //
+  // Links to pages/profile/ with no ?u= — the profile page's own boot logic
+  // resolves that to the signed-in user's own canonical URL once Clerk
+  // confirms who they are, so this never needs to know or embed the
+  // username itself here. Every page carrying this sidebar sits at exactly
+  // one of two depths (site root, or one level under pages/), so a single
+  // check is enough to get the relative path right from either.
+  const PROFILE_HREF = window.location.pathname.includes("/pages/")
+    ? "../profile/index.html"
+    : "pages/profile/index.html";
+
   function buildSignedInHTML(name, avatar) {
     return `
-      <div class="left-nav-account">
+      <a class="left-nav-account" href="${PROFILE_HREF}">
         ${avatarMarkup(name, avatar)}
         <span class="left-nav-account-name">${escapeHtml(name)}</span>
-      </div>
+      </a>
       <button type="button" class="left-nav-auth-btn left-nav-auth-btn-ghost left-nav-signout-btn">Sign Out</button>
     `;
   }

@@ -1,0 +1,232 @@
+<!doctype html>
+<!-- Cheese — Profile page
+     Public by default: pages/profile/?u=<username> is viewable by anyone,
+     signed in or not. Visiting your own profile (either via ?u=<your own
+     username>, or with no ?u= at all — script.js redirects to the canonical
+     URL once Clerk confirms who you are) reveals inline edit controls. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cheese — Profile</title>
+    <meta name="description" content="Cheese player profile — puzzle rating, stats, and history." />
+    <link rel="icon" type="image/svg+xml" href="../../assets/icons/favicon.svg?v=1" />
+    <link rel="stylesheet" href="../../assets/css/nav.css" />
+    <link rel="stylesheet" href="../../assets/css/cheese-dialogs.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="../../mobile-gate.css" />
+  </head>
+
+  <body>
+
+    <!-- MOBILE GATE (small viewports only) -->
+    <div class="mobile-gate">
+      <div class="mobile-gate-card">
+        <svg class="mobile-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
+        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+      </div>
+    </div>
+
+    <!-- LEFT NAV SIDEBAR — no item highlighted active; Profile is reached via
+         the sidebar's own account row, not a dedicated nav entry. -->
+    <nav class="left-nav">
+
+      <a href="../../index.html" class="left-nav-logo" aria-label="Cheese — Home">
+        <svg class="left-nav-logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="14" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"/>
+          <path d="M10 24 L10 21 C10 21 8 19 8 16 C8 12 11 9 13 8 C13 8 12 10 13 11 C14 10 15 8 17 8 C20 8 22 10 22 13 C22 16 20 18 19 19 L19 24 Z" fill="rgba(255,255,255,0.75)"/>
+          <rect x="9" y="23.5" width="14" height="2" rx="1" fill="rgba(255,255,255,0.6)"/>
+        </svg>
+        <span class="left-nav-logo-text">Cheese</span>
+      </a>
+
+      <ul class="left-nav-items">
+
+        <li>
+          <a href="../analysis/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span>Analysis</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../opening-explorer/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span>Opening Explorer</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../puzzles/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+            <span>Puzzles</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../training/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            <span>Training</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="../database/index.html" class="left-nav-item left-nav-item-link">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <span>Master Games</span>
+          </a>
+        </li>
+
+      </ul>
+
+      <div class="left-nav-auth">
+        <a href="../signup/index.html" class="left-nav-auth-btn left-nav-auth-btn-primary">Sign Up</a>
+        <a href="../login/index.html" class="left-nav-auth-btn left-nav-auth-btn-ghost">Log In</a>
+      </div>
+
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="pr-container">
+
+      <!-- LOADING / NOT-FOUND / SIGNED-OUT-NO-TARGET states -->
+      <div class="pr-status" id="prStatus">Loading…</div>
+
+      <div class="pr-page" id="prPage" hidden>
+
+        <!-- BANNER -->
+        <div class="pr-banner pr-banner-default" id="prBanner">
+          <div class="pr-banner-identity">
+            <button type="button" class="pr-avatar" id="prAvatar" aria-label="Profile picture"></button>
+            <div class="pr-identity-text">
+              <div class="pr-username-row">
+                <h1 class="pr-username" id="prUsername"></h1>
+                <input class="pr-username-input" id="prUsernameInput" type="text" maxlength="64" hidden />
+              </div>
+              <div class="pr-meta-row">
+                <span class="pr-opening-tag" id="prOpeningTag" hidden></span>
+                <span class="pr-member-since" id="prMemberSince"></span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="pr-edit-btn" id="prEditBtn" hidden>Edit Profile</button>
+          <div class="pr-edit-actions" id="prEditActions" hidden>
+            <button type="button" class="pr-edit-btn pr-edit-btn-ghost" id="prEditCancelBtn">Cancel</button>
+            <button type="button" class="pr-edit-btn pr-edit-btn-primary" id="prEditSaveBtn">Save</button>
+          </div>
+        </div>
+
+        <!-- EDIT PANEL — own profile, edit mode only -->
+        <div class="pr-edit-panel" id="prEditPanel" hidden>
+          <div class="pr-edit-field">
+            <span class="pr-edit-label">Banner</span>
+            <div class="pr-banner-picker" id="prBannerPicker"></div>
+          </div>
+          <div class="pr-edit-field">
+            <label class="pr-edit-label" for="prOpeningSelect">Favorite Opening</label>
+            <select class="pr-select" id="prOpeningSelect">
+              <option value="">None</option>
+            </select>
+          </div>
+          <div class="pr-edit-error" id="prEditError" hidden></div>
+        </div>
+
+        <!-- STAT CARDS — quick-jump tiles to the sections below -->
+        <div class="pr-stats-grid">
+          <a href="#pr-chart" class="pr-stat-card">
+            <span class="pr-stat-value" id="prStatRating">—</span>
+            <span class="pr-stat-label">Rating</span>
+          </a>
+          <a href="#pr-activity" class="pr-stat-card">
+            <span class="pr-stat-value" id="prStatSolved">—</span>
+            <span class="pr-stat-label">Solved</span>
+          </a>
+          <a href="#pr-insights" class="pr-stat-card">
+            <span class="pr-stat-value" id="prStatAccuracy">—</span>
+            <span class="pr-stat-label">Accuracy</span>
+          </a>
+          <div class="pr-stat-card pr-stat-card-static">
+            <span class="pr-stat-value" id="prStatBestStreak">—</span>
+            <span class="pr-stat-label">Best Streak</span>
+          </div>
+          <div class="pr-stat-card pr-stat-card-static">
+            <span class="pr-stat-value" id="prStatCurrentStreak">—</span>
+            <span class="pr-stat-label">Current Streak</span>
+          </div>
+        </div>
+
+        <!-- RATING PROGRESS CHART -->
+        <section class="pr-section" id="pr-chart">
+          <h2 class="pr-section-title">Rating Progress</h2>
+          <div class="pr-chart-empty" id="prChartEmpty" hidden>
+            Not enough puzzles solved yet to show a trend — solve a few more on the
+            <a href="../puzzles/index.html">Puzzles page</a> and check back.
+          </div>
+          <div class="pr-chart-wrap" id="prChartWrap" hidden>
+            <svg class="pr-chart-svg" id="prChartSvg" viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
+              <polyline class="pr-chart-area" id="prChartArea" points="" />
+              <polyline class="pr-chart-line" id="prChartLine" points="" />
+              <line class="pr-chart-crosshair" id="prChartCrosshair" x1="0" y1="0" x2="0" y2="200" />
+              <circle class="pr-chart-dot" id="prChartDot" r="4" cx="0" cy="0" />
+            </svg>
+            <div class="pr-chart-tooltip" id="prChartTooltip" hidden>
+              <div class="pr-chart-tooltip-value" id="prChartTooltipValue"></div>
+              <div class="pr-chart-tooltip-date" id="prChartTooltipDate"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RECENT ACTIVITY -->
+        <section class="pr-section" id="pr-activity">
+          <h2 class="pr-section-title">Recent Activity</h2>
+          <div class="pr-activity-empty" id="prActivityEmpty" hidden>No puzzles solved yet.</div>
+          <ul class="pr-activity-list" id="prActivityList"></ul>
+        </section>
+
+        <!-- STRENGTHS & WEAKNESSES -->
+        <section class="pr-section" id="pr-insights">
+          <h2 class="pr-section-title">Strengths &amp; Weaknesses</h2>
+          <div class="pr-insights-empty" id="prInsightsEmpty" hidden>
+            Solve a few more puzzles across different tactics to reveal patterns here.
+          </div>
+          <div class="pr-insights-grid" id="prInsightsGrid" hidden>
+            <div>
+              <h3 class="pr-insights-subtitle pr-insights-subtitle-good">Strengths</h3>
+              <ul class="pr-theme-list" id="prStrengthsList"></ul>
+            </div>
+            <div>
+              <h3 class="pr-insights-subtitle pr-insights-subtitle-bad">Weaknesses</h3>
+              <ul class="pr-theme-list" id="prWeaknessesList"></ul>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <input type="file" id="prAvatarInput" accept="image/*" hidden />
+
+    <script src="../../assets/js/api-client.js"></script>
+    <script src="../../assets/js/cheese-dialogs.js"></script>
+
+    <script data-clerk-publishable-key="pk_live_Y2xlcmsudXNlY2hlZXNlLnh5eiQ" src="https://clerk.usecheese.xyz/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
+    <script src="../../assets/js/clerk-client.js"></script>
+
+    <script src="script.js"></script>
+  </body>
+</html>

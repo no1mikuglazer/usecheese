@@ -24,6 +24,23 @@ import { config } from "../config.js";
 
 let db = null;
 
+// SQLite has no "ADD COLUMN IF NOT EXISTS" — a database that already existed
+// before a given column was added needs a guarded ALTER TABLE instead. Runs
+// on every connection, same as the CREATE TABLE statements below, so a
+// production database self-heals without a separate manual migration step.
+// Extracted once here since Stage 5 adds three more columns needing the
+// exact same guard `rating` already established.
+function ensureColumn(database, table, column, ddl) {
+  const hasColumn = database
+    .prepare(`PRAGMA table_info(${table})`)
+    .all()
+    .some((c) => c.name === column);
+
+  if (!hasColumn) {
+    database.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  }
+}
+
 function createSchema(database) {
   // IF NOT EXISTS everywhere: this runs on every connection, so it must
   // never be able to touch a row that already exists.
@@ -32,7 +49,9 @@ function createSchema(database) {
       clerk_user_id       TEXT PRIMARY KEY,
       username             TEXT NOT NULL UNIQUE,
       username_changed_at  TEXT,
-      created_at            TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+      banner                TEXT,
+      favorite_opening      TEXT
     );
 
     CREATE TABLE IF NOT EXISTS puzzle_stats (
@@ -45,12 +64,9 @@ function createSchema(database) {
       rating          INTEGER NOT NULL DEFAULT 200
     );
 
-    -- One row per completed puzzle attempt. Nothing reads this yet — no
-    -- endpoint, no UI — it exists purely to have real history already
-    -- accumulating before the future stats/improvement-areas feature needs
-    -- it (themes let that feature find patterns like "struggles with pins";
-    -- puzzle_id lets it re-fetch the exact position later without having
-    -- stored the FEN itself here).
+    -- One row per completed puzzle attempt. Powers the profile page's
+    -- recent-activity list, rating chart (rating_after), and
+    -- strengths/weaknesses breakdown (themes) — see users.service.js.
     CREATE TABLE IF NOT EXISTS puzzle_attempts (
       id             INTEGER PRIMARY KEY AUTOINCREMENT,
       clerk_user_id  TEXT NOT NULL REFERENCES users(clerk_user_id),
@@ -60,24 +76,17 @@ function createSchema(database) {
       failed         INTEGER NOT NULL,
       used_hint      INTEGER NOT NULL,
       rating_delta   INTEGER NOT NULL,
-      attempted_at   TEXT NOT NULL DEFAULT (datetime('now'))
+      attempted_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      rating_after   INTEGER
     );
 
     CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
   `);
 
-  // SQLite has no "ADD COLUMN IF NOT EXISTS" — a database that already existed
-  // before `rating` was added needs this guarded ALTER TABLE instead. Runs on
-  // every connection, same as the CREATE TABLE above, so a production
-  // database self-heals without a separate manual migration step.
-  const hasRatingColumn = database
-    .prepare("PRAGMA table_info(puzzle_stats)")
-    .all()
-    .some((column) => column.name === "rating");
-
-  if (!hasRatingColumn) {
-    database.exec("ALTER TABLE puzzle_stats ADD COLUMN rating INTEGER NOT NULL DEFAULT 200");
-  }
+  ensureColumn(database, "puzzle_stats", "rating", "rating INTEGER NOT NULL DEFAULT 200");
+  ensureColumn(database, "users", "banner", "banner TEXT");
+  ensureColumn(database, "users", "favorite_opening", "favorite_opening TEXT");
+  ensureColumn(database, "puzzle_attempts", "rating_after", "rating_after INTEGER");
 }
 
 export function getUsersDb() {
