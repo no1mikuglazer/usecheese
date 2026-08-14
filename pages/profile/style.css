@@ -86,27 +86,78 @@ body {
     background: rgba(13, 16, 22, 0.86);
 }
 
-/* Banner variants — a subtle diagonal tint over the same dark glass base,
-   never a bold solid block. Keys only (never raw CSS) come from the
-   server's profileOptions.js; these are the frontend's own mapping of
-   each key to an actual gradient, reusing hues already established
-   elsewhere in the app rather than inventing a new palette. "default"
-   needs its own explicit rule too — both the swatch buttons and the live
-   banner get "pr-banner-" + key applied uniformly for every key including
-   "default" (see script.js), and without this it fell through to the
-   browser's native unstyled button background instead of matching. */
+/* Banner variants — a strong diagonal wash from the shared dark glass base
+   (top-left, where the avatar/username sit) into a genuinely vivid hue
+   (bottom-right, away from the text). Keys only (never raw CSS) come from
+   the server's profileOptions.js; these are the frontend's own mapping of
+   each key to an actual gradient. "default" needs its own explicit rule
+   too — both the swatch buttons and the live banner get "pr-banner-" + key
+   applied uniformly for every key including "default" (see script.js), and
+   without this it fell through to the browser's native unstyled button
+   background instead of matching.
+
+   Deliberately much bolder than the original 6-color set (0.20-opacity
+   tints that read as barely-different shades of the same dark card) — each
+   of these should be identifiable at a glance. Text stays legible against
+   all of them because .pr-banner-identity carries a strong text-shadow
+   (below) and the gradient's dark stop always sits under the identity
+   block regardless of which hue the light stop resolves to.
+
+   The light stop is pinned at 55% rather than 100% — CSS holds a gradient
+   flat at its last stop's color the rest of the way to the box, so this
+   makes the right half of the (very wide, short) banner a genuinely SOLID
+   block of that hue instead of a color that only ever fully arrives at
+   the literal far corner. That solid block is what actually reads as
+   "red" or "teal" at a glance against this page's own blurred photo
+   background — the first version's 100%-stop gradient blended so
+   gradually across the whole box that it looked like a gray-ish haze
+   instead of a color, confirmed by screenshot before this fix. */
 .pr-banner-default { background: rgba(13, 16, 22, 0.9); }
-.pr-banner-blue   { background: linear-gradient(135deg, rgba(96, 165, 250, 0.20), rgba(13, 16, 22, 0.88)); }
-.pr-banner-green  { background: linear-gradient(135deg, rgba(88, 200, 120, 0.20), rgba(13, 16, 22, 0.88)); }
-.pr-banner-purple { background: linear-gradient(135deg, rgba(167, 139, 250, 0.20), rgba(13, 16, 22, 0.88)); }
-.pr-banner-amber  { background: linear-gradient(135deg, rgba(255, 205, 92, 0.20), rgba(13, 16, 22, 0.88)); }
-.pr-banner-rose   { background: linear-gradient(135deg, rgba(232, 80, 62, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-red     { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(232, 63, 63, 0.72) 55%); }
+.pr-banner-orange  { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(249, 115, 22, 0.72) 55%); }
+.pr-banner-yellow  { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(234, 190, 20, 0.65) 55%); }
+.pr-banner-green   { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(88, 200, 120, 0.72) 55%); }
+.pr-banner-cyan    { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(34, 211, 238, 0.65) 55%); }
+.pr-banner-blue    { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(96, 165, 250, 0.72) 55%); }
+.pr-banner-purple  { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(167, 139, 250, 0.72) 55%); }
+.pr-banner-pink    { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(244, 114, 182, 0.72) 55%); }
+.pr-banner-magenta { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(217, 70, 239, 0.72) 55%); }
+.pr-banner-teal    { background: linear-gradient(135deg, rgba(13, 16, 22, 0.92) 0%, rgba(45, 212, 191, 0.65) 55%); }
+.pr-banner-dark    { background: linear-gradient(135deg, rgba(4, 4, 6, 0.97) 0%, rgba(0, 0, 0, 0.98) 100%); }
+.pr-banner-light   { background: linear-gradient(135deg, rgba(226, 232, 240, 0.94) 0%, rgba(199, 210, 224, 0.96) 100%); }
+
+/* "Light" is the one variant bright enough that white text/icons stop
+   working — everything inside the identity block flips to dark ink here
+   instead. */
+.pr-banner-light .pr-username,
+.pr-banner-light .pr-opening-tag,
+.pr-banner-light .pr-member-since,
+.pr-banner-light .pr-edit-btn {
+    color: #0d1016;
+    text-shadow: none;
+}
+.pr-banner-light .pr-opening-tag { background: rgba(13, 16, 22, 0.08); border-color: rgba(13, 16, 22, 0.16); }
+.pr-banner-light .pr-member-since { color: rgba(13, 16, 22, 0.6); }
+.pr-banner-light .pr-edit-btn { background: rgba(13, 16, 22, 0.08); border-color: rgba(13, 16, 22, 0.2); }
+.pr-banner-light .pr-edit-btn:hover { background: rgba(13, 16, 22, 0.14); }
+
+/* Legacy keys — no longer offered in the banner picker (superseded by the
+   vivid "red"/"orange" above), kept only so an account that saved one of
+   these before the palette widened keeps rendering exactly as it always
+   has. See profileOptions.js's LEGACY_BANNER_KEYS. */
+.pr-banner-amber { background: linear-gradient(135deg, rgba(255, 205, 92, 0.20), rgba(13, 16, 22, 0.88)); }
+.pr-banner-rose  { background: linear-gradient(135deg, rgba(232, 80, 62, 0.20), rgba(13, 16, 22, 0.88)); }
 
 .pr-banner-identity {
     display: flex;
     align-items: center;
     gap: 20px;
     min-width: 0;
+    /* Inherited by username/opening-tag/member-since below — one rule keeps
+       every banner variant's text readable, including the vivid ones,
+       without repeating a shadow value per element. .pr-banner-light
+       overrides this back to none, since dark text needs no shadow. */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 3px 14px rgba(0, 0, 0, 0.55);
 }
 
 .pr-avatar {
@@ -180,7 +231,6 @@ body {
     font-weight: 800;
     letter-spacing: -0.3px;
     color: #fff;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -297,6 +347,25 @@ body {
     gap: 10px;
 }
 
+/* Forces the preview field onto its own row below the banner-picker /
+   opening-select row, inside the same flex-wrap edit panel. */
+.pr-edit-field-full {
+    flex-basis: 100%;
+}
+
+/* A real .pr-banner card, same markup/classes/dimensions as the live one at
+   the top of the page — script.js's paintBannerCard() renders both from
+   the same function and the same profile data, so this can never visually
+   drift from what Save actually produces. Not interactive (no edit
+   button/avatar upload here, just the accurate preview). */
+.pr-banner-preview {
+    pointer-events: none;
+}
+
+.pr-banner-preview .pr-avatar {
+    cursor: default;
+}
+
 .pr-edit-label {
     font-size: 12px;
     font-weight: 700;
@@ -306,29 +375,70 @@ body {
 }
 
 .pr-banner-picker {
-    display: flex;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 10px;
+    max-width: 560px;
 }
 
+/* Each option is a small labeled card rendered in its own actual banner
+   gradient (pr-banner-swatch pr-banner-<key>, set in script.js) — not a
+   bare color chip — so the option is legible at a glance rather than a
+   row of near-identical tiny squares. */
 .pr-banner-swatch {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
+    position: relative;
+    height: 56px;
+    border-radius: 10px;
     cursor: pointer;
     border: 2px solid transparent;
-    /* A permanent faint edge (independent of the active-state border above)
-       so a dark swatch (default, green, purple) stays distinguishable from
-       the equally-dark picker background even when not selected. */
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    /* A permanent faint edge (independent of the active-state border below)
+       so a dark swatch (default, dark) stays distinguishable from the
+       equally-dark picker background even when not selected. */
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    align-items: flex-end;
+    padding: 6px 8px;
+    overflow: hidden;
 }
 
 .pr-banner-swatch:hover {
     transform: translateY(-2px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.26), 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.pr-banner-swatch-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.pr-banner-swatch.pr-banner-light .pr-banner-swatch-label {
+    color: #0d1016;
+    text-shadow: none;
 }
 
 .pr-banner-swatch-active {
-    border-color: rgba(255, 255, 255, 0.85);
+    border-color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+.pr-banner-swatch-active::before {
+    content: "✓";
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.pr-banner-swatch-active.pr-banner-light::before {
+    color: #0d1016;
+    text-shadow: none;
 }
 
 .pr-select {
@@ -444,6 +554,61 @@ a.pr-stat-card:hover {
 .pr-chart-wrap[hidden],
 .pr-insights-grid[hidden],
 .pr-insights-progress[hidden] { display: none; }
+
+/* =====================
+   PUZZLE RATING (current standing + milestone progress)
+   ===================== */
+
+.pr-rating-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pr-rating-headline {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.pr-rating-value {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.pr-rating-sub {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #58c878;
+}
+
+.pr-rating-bar-track {
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.pr-rating-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #4a8fe0, #60a5fa);
+    transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.pr-rating-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.4);
+    font-variant-numeric: tabular-nums;
+}
 
 /* =====================
    RATING CHART

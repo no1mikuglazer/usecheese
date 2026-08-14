@@ -14,12 +14,26 @@
 // so a stored value can never resolve to something broken or off-brand.
 export const BANNERS = [
   { key: "default", label: "Default" },
-  { key: "blue", label: "Blue" },
+  { key: "red", label: "Red" },
+  { key: "orange", label: "Orange" },
+  { key: "yellow", label: "Yellow" },
   { key: "green", label: "Green" },
+  { key: "cyan", label: "Cyan" },
+  { key: "blue", label: "Blue" },
   { key: "purple", label: "Purple" },
-  { key: "amber", label: "Amber" },
-  { key: "rose", label: "Rose" },
+  { key: "pink", label: "Pink" },
+  { key: "magenta", label: "Magenta" },
+  { key: "teal", label: "Teal" },
+  { key: "dark", label: "Dark" },
+  { key: "light", label: "Light" },
 ];
+
+// Superseded by the wider palette above — "red"/"orange" are the vivid
+// replacements for these two — but kept valid so an account that saved one
+// of these before the palette widened keeps rendering exactly as it did
+// (see .pr-banner-amber / .pr-banner-rose in style.css). Never offered in
+// the picker again.
+const LEGACY_BANNER_KEYS = ["amber", "rose"];
 
 export const OPENINGS = [
   "Italian Game",
@@ -64,5 +78,5 @@ export const OPENINGS = [
   "Colle System",
 ];
 
-export const BANNER_KEYS = new Set(BANNERS.map((b) => b.key));
+export const BANNER_KEYS = new Set([...BANNERS.map((b) => b.key), ...LEGACY_BANNER_KEYS]);
 export const OPENING_NAMES = new Set(OPENINGS);

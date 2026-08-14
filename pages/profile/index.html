@@ -142,12 +142,29 @@
               <option value="">None</option>
             </select>
           </div>
+          <div class="pr-edit-field pr-edit-field-full">
+            <span class="pr-edit-label">Preview</span>
+            <div class="pr-banner pr-banner-default pr-banner-preview" id="prBannerPreview">
+              <div class="pr-banner-identity">
+                <div class="pr-avatar" id="prPreviewAvatar" aria-hidden="true"></div>
+                <div class="pr-identity-text">
+                  <div class="pr-username-row">
+                    <h1 class="pr-username" id="prPreviewUsername"></h1>
+                  </div>
+                  <div class="pr-meta-row">
+                    <span class="pr-opening-tag" id="prPreviewOpeningTag" hidden></span>
+                    <span class="pr-member-since" id="prPreviewMemberSince"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="pr-edit-error" id="prEditError" hidden></div>
         </div>
 
         <!-- STAT CARDS — quick-jump tiles to the sections below -->
         <div class="pr-stats-grid">
-          <a href="#pr-chart" class="pr-stat-card">
+          <a href="#pr-rating" class="pr-stat-card">
             <span class="pr-stat-value" id="prStatRating">—</span>
             <span class="pr-stat-label">Rating</span>
           </a>
@@ -168,6 +185,27 @@
             <span class="pr-stat-label">Current Streak</span>
           </div>
         </div>
+
+        <!-- PUZZLE RATING — current standing + progress toward the next
+             100-point milestone. Separate from the historical line chart
+             below: this answers "where do I stand right now," the chart
+             answers "how did I get here." -->
+        <section class="pr-section" id="pr-rating">
+          <h2 class="pr-section-title">Puzzle Rating</h2>
+          <div class="pr-rating-card">
+            <div class="pr-rating-headline">
+              <span class="pr-rating-value" id="prRatingHeadline">— / —</span>
+              <span class="pr-rating-sub" id="prRatingSub"></span>
+            </div>
+            <div class="pr-rating-bar-track">
+              <div class="pr-rating-bar-fill" id="prRatingBarFill"></div>
+            </div>
+            <div class="pr-rating-bar-labels">
+              <span id="prRatingBarStart"></span>
+              <span id="prRatingBarEnd"></span>
+            </div>
+          </div>
+        </section>
 
         <!-- RATING PROGRESS CHART -->
         <section class="pr-section" id="pr-chart">

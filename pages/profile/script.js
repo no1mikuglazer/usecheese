@@ -28,11 +28,23 @@ const bannerPickerEl = document.getElementById("prBannerPicker");
 const openingSelectEl = document.getElementById("prOpeningSelect");
 const editErrorEl = document.getElementById("prEditError");
 
+const previewBannerEl = document.getElementById("prBannerPreview");
+const previewAvatarEl = document.getElementById("prPreviewAvatar");
+const previewUsernameEl = document.getElementById("prPreviewUsername");
+const previewOpeningTagEl = document.getElementById("prPreviewOpeningTag");
+const previewMemberSinceEl = document.getElementById("prPreviewMemberSince");
+
 const statRatingEl = document.getElementById("prStatRating");
 const statSolvedEl = document.getElementById("prStatSolved");
 const statAccuracyEl = document.getElementById("prStatAccuracy");
 const statBestStreakEl = document.getElementById("prStatBestStreak");
 const statCurrentStreakEl = document.getElementById("prStatCurrentStreak");
+
+const ratingHeadlineEl = document.getElementById("prRatingHeadline");
+const ratingSubEl = document.getElementById("prRatingSub");
+const ratingBarFillEl = document.getElementById("prRatingBarFill");
+const ratingBarStartEl = document.getElementById("prRatingBarStart");
+const ratingBarEndEl = document.getElementById("prRatingBarEnd");
 
 const chartEmptyEl = document.getElementById("prChartEmpty");
 const chartWrapEl = document.getElementById("prChartWrap");
@@ -87,37 +99,76 @@ function showPage() {
 // empty (a generated placeholder when no real photo exists), so imageUrl
 // being null/undefined here (this page only passes a real URL when
 // hasImage was true — see users.service.js's getPublicProfile) is the
-// actual "no photo" signal, not an empty string check.
-function renderAvatar(username, imageUrl) {
-  avatarEl.classList.remove("pr-avatar-default");
+// actual "no photo" signal, not an empty string check. Takes a target
+// element rather than assuming the real avatar, so the same function
+// paints both the live banner's avatar and the edit-mode preview's.
+function renderAvatarInto(el, username, imageUrl) {
+  el.classList.remove("pr-avatar-default");
   if (imageUrl) {
-    avatarEl.style.backgroundImage = `url("${imageUrl}")`;
-    avatarEl.textContent = "";
+    el.style.backgroundImage = `url("${imageUrl}")`;
+    el.textContent = "";
   } else {
-    avatarEl.style.backgroundImage = "";
-    avatarEl.classList.add("pr-avatar-default");
-    avatarEl.textContent = (username || "?").trim().charAt(0).toUpperCase() || "?";
+    el.style.backgroundImage = "";
+    el.classList.add("pr-avatar-default");
+    el.textContent = (username || "?").trim().charAt(0).toUpperCase() || "?";
   }
+}
+
+function formatMemberSince(memberSince) {
+  const memberDate = new Date(memberSince.replace(" ", "T") + "Z");
+  return Number.isNaN(memberDate.getTime())
+    ? ""
+    : "Member since " + memberDate.toLocaleDateString(undefined, { year: "numeric", month: "long" });
 }
 
 // ── Rendering ────────────────────────────────────────────────────────────
 
-function renderIdentity(profile) {
-  bannerEl.className = "pr-banner pr-banner-" + (profile.banner || "default");
-  renderAvatar(profile.username, profile.imageUrl);
-  usernameEl.textContent = profile.username;
+const mainBannerRefs = {
+  bannerEl, avatarEl, usernameEl, openingTagEl, memberSinceEl,
+};
+const previewBannerRefs = {
+  bannerEl: previewBannerEl,
+  avatarEl: previewAvatarEl,
+  usernameEl: previewUsernameEl,
+  openingTagEl: previewOpeningTagEl,
+  memberSinceEl: previewMemberSinceEl,
+};
 
-  if (profile.favoriteOpening) {
-    openingTagEl.hidden = false;
-    openingTagEl.textContent = profile.favoriteOpening;
+// Paints one banner card (the real one, or the edit-mode preview) from a
+// plain data object — the ONE place that turns profile data into a banner
+// card's DOM, called for both targets, so the preview can never visually
+// drift from what Save actually produces.
+function paintBannerCard(refs, data) {
+  refs.bannerEl.className = "pr-banner pr-banner-" + (data.banner || "default");
+  renderAvatarInto(refs.avatarEl, data.username, data.imageUrl);
+  refs.usernameEl.textContent = data.username;
+
+  if (data.favoriteOpening) {
+    refs.openingTagEl.hidden = false;
+    refs.openingTagEl.textContent = data.favoriteOpening;
   } else {
-    openingTagEl.hidden = true;
+    refs.openingTagEl.hidden = true;
   }
 
-  const memberDate = new Date(profile.memberSince.replace(" ", "T") + "Z");
-  memberSinceEl.textContent = Number.isNaN(memberDate.getTime())
-    ? ""
-    : "Member since " + memberDate.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+  refs.memberSinceEl.textContent = formatMemberSince(data.memberSince);
+}
+
+function renderIdentity(profile) {
+  paintBannerCard(mainBannerRefs, profile);
+}
+
+// Repaints the edit-panel preview from the in-progress (unsaved) edit
+// state — the selected swatch and the opening dropdown's current value —
+// rather than currentProfile, since nothing here is committed until Save.
+function updateBannerPreview() {
+  if (!currentProfile) return;
+  paintBannerCard(previewBannerRefs, {
+    banner: selectedBannerKey,
+    username: currentProfile.username,
+    imageUrl: currentProfile.imageUrl,
+    favoriteOpening: openingSelectEl.value || null,
+    memberSince: currentProfile.memberSince,
+  });
 }
 
 function renderStats(stats) {
@@ -127,6 +178,26 @@ function renderStats(stats) {
     stats.attempted > 0 ? Math.round((stats.solved / stats.attempted) * 100) + "%" : "—";
   statBestStreakEl.textContent = String(stats.bestStreak);
   statCurrentStreakEl.textContent = String(stats.currentStreak);
+}
+
+// Milestones are every 100 rating points — not server data, just a fixed
+// display step computed from the rating the server already tracks. Never
+// lands on remaining === 0: if the rating is exactly on a milestone, the
+// "next" one is the one after it (ceil((rating + 1) / STEP) skips past a
+// rating that's already an exact multiple).
+const RATING_MILESTONE_STEP = 100;
+
+function renderRatingMilestone(stats) {
+  const rating = stats.rating;
+  const next = Math.ceil((rating + 1) / RATING_MILESTONE_STEP) * RATING_MILESTONE_STEP;
+  const prev = next - RATING_MILESTONE_STEP;
+  const progressPct = ((rating - prev) / RATING_MILESTONE_STEP) * 100;
+
+  ratingHeadlineEl.textContent = `${rating} / ${next}`;
+  ratingSubEl.textContent = `+${next - rating} to next milestone`;
+  ratingBarFillEl.style.width = progressPct + "%";
+  ratingBarStartEl.textContent = String(prev);
+  ratingBarEndEl.textContent = String(next);
 }
 
 function renderActivity(recentActivity) {
@@ -363,7 +434,14 @@ async function ensureProfileOptionsLoaded() {
     swatch.type = "button";
     swatch.className = "pr-banner-swatch pr-banner-" + banner.key;
     swatch.dataset.bannerKey = banner.key;
+    swatch.setAttribute("aria-label", banner.label);
     swatch.title = banner.label;
+
+    const label = document.createElement("span");
+    label.className = "pr-banner-swatch-label";
+    label.textContent = banner.label;
+    swatch.appendChild(label);
+
     swatch.addEventListener("click", () => selectBannerSwatch(banner.key));
     bannerPickerEl.appendChild(swatch);
   }
@@ -386,6 +464,7 @@ function selectBannerSwatch(key) {
   bannerPickerEl.querySelectorAll(".pr-banner-swatch").forEach((el) => {
     el.classList.toggle("pr-banner-swatch-active", el.dataset.bannerKey === key);
   });
+  updateBannerPreview();
 }
 
 function showEditError(message) {
@@ -410,8 +489,8 @@ async function enterEditMode() {
   editActionsEl.hidden = false;
   editPanelEl.hidden = false;
 
-  selectBannerSwatch(currentProfile.banner || "default");
   openingSelectEl.value = currentProfile.favoriteOpening || "";
+  selectBannerSwatch(currentProfile.banner || "default"); // also paints the initial preview
 
   avatarEl.classList.add("pr-avatar-editable");
 }
@@ -455,6 +534,7 @@ async function saveProfileEdits() {
     currentProfile = { ...currentProfile, ...updated };
     renderIdentity(currentProfile);
     renderStats(currentProfile.puzzleStats);
+    renderRatingMilestone(currentProfile.puzzleStats);
     exitEditMode();
   } catch (err) {
     if (err.code === "username_change_too_soon" && err.details && err.details.availableAt) {
@@ -478,6 +558,7 @@ async function saveProfileEdits() {
 editBtn.addEventListener("click", enterEditMode);
 editCancelBtn.addEventListener("click", exitEditMode);
 editSaveBtn.addEventListener("click", saveProfileEdits);
+openingSelectEl.addEventListener("change", updateBannerPreview);
 
 avatarEl.addEventListener("click", () => {
   if (avatarEl.classList.contains("pr-avatar-editable")) {
@@ -493,7 +574,10 @@ avatarInputEl.addEventListener("change", async () => {
   try {
     await window.cheeseClerk.user.setProfileImage({ file });
     const user = window.cheeseClerk.user;
-    renderAvatar(currentProfile.username, user.hasImage ? user.imageUrl : null);
+    const newImageUrl = user.hasImage ? user.imageUrl : null;
+    currentProfile.imageUrl = newImageUrl;
+    renderAvatarInto(avatarEl, currentProfile.username, newImageUrl);
+    renderAvatarInto(previewAvatarEl, currentProfile.username, newImageUrl);
   } catch (err) {
     cheeseDialogs.showAlert(
       "Could not upload that image. Please try a different file.",
@@ -522,6 +606,7 @@ async function loadAndRender(username) {
   currentProfile = profile;
   renderIdentity(profile);
   renderStats(profile.puzzleStats);
+  renderRatingMilestone(profile.puzzleStats);
   renderChart(profile.ratingHistory);
   renderActivity(profile.recentActivity);
   renderInsights(profile.themeBreakdown);
