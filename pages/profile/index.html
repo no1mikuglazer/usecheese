@@ -178,8 +178,8 @@
           </div>
           <div class="pr-chart-wrap" id="prChartWrap" hidden>
             <svg class="pr-chart-svg" id="prChartSvg" viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
-              <polyline class="pr-chart-area" id="prChartArea" points="" />
-              <polyline class="pr-chart-line" id="prChartLine" points="" />
+              <path class="pr-chart-area" id="prChartArea" d="" />
+              <path class="pr-chart-line" id="prChartLine" d="" />
               <line class="pr-chart-crosshair" id="prChartCrosshair" x1="0" y1="0" x2="0" y2="200" />
               <circle class="pr-chart-dot" id="prChartDot" r="4" cx="0" cy="0" />
             </svg>
@@ -212,6 +212,10 @@
               <h3 class="pr-insights-subtitle pr-insights-subtitle-bad">Weaknesses</h3>
               <ul class="pr-theme-list" id="prWeaknessesList"></ul>
             </div>
+          </div>
+          <div class="pr-insights-progress" id="prInsightsProgress" hidden>
+            <h3 class="pr-insights-subtitle">Almost Unlocked</h3>
+            <ul class="pr-theme-list" id="prProgressList"></ul>
           </div>
         </section>
 

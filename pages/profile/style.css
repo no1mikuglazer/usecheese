@@ -442,7 +442,8 @@ a.pr-stat-card:hover {
 .pr-activity-empty[hidden],
 .pr-insights-empty[hidden],
 .pr-chart-wrap[hidden],
-.pr-insights-grid[hidden] { display: none; }
+.pr-insights-grid[hidden],
+.pr-insights-progress[hidden] { display: none; }
 
 /* =====================
    RATING CHART
@@ -593,6 +594,7 @@ a.pr-stat-card:hover {
     letter-spacing: 0.6px;
     text-transform: uppercase;
     margin-bottom: 10px;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .pr-insights-subtitle-good { color: #58c878; }
@@ -621,6 +623,19 @@ a.pr-stat-card:hover {
     font-weight: 700;
     color: rgba(255, 255, 255, 0.55);
     font-variant-numeric: tabular-nums;
+}
+
+.pr-insights-progress {
+    margin-top: 24px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pr-theme-remaining {
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
 }
 
 /* =====================

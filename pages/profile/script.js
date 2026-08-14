@@ -52,6 +52,8 @@ const insightsEmptyEl = document.getElementById("prInsightsEmpty");
 const insightsGridEl = document.getElementById("prInsightsGrid");
 const strengthsListEl = document.getElementById("prStrengthsList");
 const weaknessesListEl = document.getElementById("prWeaknessesList");
+const insightsProgressEl = document.getElementById("prInsightsProgress");
+const progressListEl = document.getElementById("prProgressList");
 
 // ── State ────────────────────────────────────────────────────────────────
 
@@ -198,6 +200,33 @@ function renderInsights(themeBreakdown) {
   renderList(weaknessesListEl, themeBreakdown.weaknesses);
 }
 
+// Themes below the server's MIN_THEME_ATTEMPTS threshold — shown as a
+// per-theme "N more puzzles" countdown so it's clear progress is being
+// made even before a theme is confident enough to call a strength or
+// weakness. Shown alongside the empty state too, since that's exactly
+// when this progress is most useful to see.
+function renderInsightsProgress(inProgress) {
+  if (!inProgress || inProgress.length === 0) {
+    insightsProgressEl.hidden = true;
+    return;
+  }
+  insightsProgressEl.hidden = false;
+
+  progressListEl.innerHTML = "";
+  for (const item of inProgress) {
+    const li = document.createElement("li");
+    li.className = "pr-theme-row";
+    const name = document.createElement("span");
+    name.className = "pr-theme-name";
+    name.textContent = item.theme;
+    const remaining = document.createElement("span");
+    remaining.className = "pr-theme-remaining";
+    remaining.textContent = item.remaining === 1 ? "1 puzzle to go" : item.remaining + " puzzles to go";
+    li.append(name, remaining);
+    progressListEl.appendChild(li);
+  }
+}
+
 // ── Rating chart ─────────────────────────────────────────────────────────
 // Full-size line chart (not the stat-tile sparkline glyph the puzzles page
 // scrapped) — single series, so no legend, but a real hover crosshair +
@@ -210,6 +239,36 @@ const CHART_VB_H = 200;
 const CHART_PAD_X = 8;
 const CHART_PAD_TOP = 14;
 const CHART_PAD_BOTTOM = 14;
+
+// Catmull-Rom-through-cubic-Bezier conversion (tension 1/6, the standard
+// factor) — turns the point-to-point polyline into a smooth curve without
+// pulling in a charting library. Missing neighbors at each end fall back to
+// the endpoint itself, which is the usual boundary condition and keeps the
+// curve from overshooting past the first/last data point. Hover detection
+// (nearestChartPoint) still snaps to the real data points in `chartPoints`,
+// not the curve, so the tooltip always reports an actual attempt.
+function smoothPathD(points) {
+  if (points.length < 2) return "";
+  if (points.length === 2) {
+    return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+  }
+
+  const d = [`M ${points[0].x},${points[0].y}`];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d.push(`C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`);
+  }
+  return d.join(" ");
+}
 
 function renderChart(ratingHistory) {
   if (ratingHistory.length < 2) {
@@ -233,14 +292,13 @@ function renderChart(ratingHistory) {
     return { x, y, rating: point.rating, attemptedAt: point.attemptedAt };
   });
 
-  const linePoints = chartPoints.map((p) => `${p.x},${p.y}`).join(" ");
-  chartLineEl.setAttribute("points", linePoints);
+  const lineD = smoothPathD(chartPoints);
+  chartLineEl.setAttribute("d", lineD);
 
-  const areaPoints =
-    `${chartPoints[0].x},${CHART_VB_H - CHART_PAD_BOTTOM} ` +
-    linePoints +
-    ` ${chartPoints[chartPoints.length - 1].x},${CHART_VB_H - CHART_PAD_BOTTOM}`;
-  chartAreaEl.setAttribute("points", areaPoints);
+  const baseline = CHART_VB_H - CHART_PAD_BOTTOM;
+  const last = chartPoints[chartPoints.length - 1];
+  const areaD = `${lineD} L ${last.x},${baseline} L ${chartPoints[0].x},${baseline} Z`;
+  chartAreaEl.setAttribute("d", areaD);
 
   hideChartHover();
 }
@@ -467,6 +525,7 @@ async function loadAndRender(username) {
   renderChart(profile.ratingHistory);
   renderActivity(profile.recentActivity);
   renderInsights(profile.themeBreakdown);
+  renderInsightsProgress(profile.themeBreakdown.inProgress);
   showPage();
 
   window.cheeseClerkReady

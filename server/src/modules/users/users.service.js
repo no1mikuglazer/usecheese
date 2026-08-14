@@ -115,6 +115,12 @@ function toActivityShape(row) {
 // strengths start index guarantees it can never overlap with the first 3
 // (weaknesses) even when there are fewer than 6 qualifying themes total —
 // it just yields a shorter strengths list instead of double-counting.
+//
+// `inProgress` surfaces the themes that haven't hit the threshold yet, each
+// with how many more attempts are needed — the "N more puzzles to unlock
+// this" counter on the profile page. Sorted closest-to-unlocking first,
+// capped at 6 so a puzzle history with dozens of rare themes doesn't turn
+// this into a wall of near-zero-progress rows.
 function computeThemeBreakdown(rows) {
   const tally = new Map();
 
@@ -131,14 +137,23 @@ function computeThemeBreakdown(rows) {
     }
   }
 
-  const qualifying = [...tally.values()]
+  const all = [...tally.values()];
+
+  const qualifying = all
     .filter((t) => t.attempts >= MIN_THEME_ATTEMPTS)
     .map((t) => ({ ...t, solveRate: t.solved / t.attempts }))
     .sort((a, b) => a.solveRate - b.solveRate);
 
+  const inProgress = all
+    .filter((t) => t.attempts < MIN_THEME_ATTEMPTS)
+    .map((t) => ({ theme: t.theme, attempts: t.attempts, remaining: MIN_THEME_ATTEMPTS - t.attempts }))
+    .sort((a, b) => a.remaining - b.remaining || b.attempts - a.attempts)
+    .slice(0, 6);
+
   return {
     weaknesses: qualifying.slice(0, 3),
     strengths: qualifying.slice(Math.max(3, qualifying.length - 3)).reverse(),
+    inProgress,
   };
 }
 
