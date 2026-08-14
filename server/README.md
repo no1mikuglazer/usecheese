@@ -247,3 +247,11 @@ volume), so a host that forgot to set it would get a working-looking deploy
 that quietly recreates the entire user database — accounts, ratings,
 everything — from scratch on every single redeploy. This happened for real
 in production before this check existed; it's why the check exists.
+
+**Incident, 2026-08-14:** exactly this. Railway's `USERS_DB_PATH` variable
+had never been set, so every deploy silently wiped every account. Fixed by
+adding `USERS_DB_PATH=/data/cheese-users.sqlite` (sibling to `DB_PATH` on
+the same volume) and the fail-fast check above. Data from before this fix
+is unrecoverable — it only ever existed in containers that no longer
+exist. Verified going forward by confirming an account created after the
+fix survives a subsequent redeploy.
