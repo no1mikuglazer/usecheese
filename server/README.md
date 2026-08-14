@@ -239,3 +239,11 @@ and the schema creates itself there on first connection (or run
 to be visible in the deploy log). Unlike the puzzle database, this file is
 **not** reproducible from anything — it is the only copy of every account,
 so it must actually be included in whatever backs up the volume.
+
+`config.js` refuses to boot in production if `USERS_DB_PATH` isn't set,
+rather than silently falling back to its relative local-dev default. That
+default resolves inside the container's own ephemeral filesystem (not the
+volume), so a host that forgot to set it would get a working-looking deploy
+that quietly recreates the entire user database — accounts, ratings,
+everything — from scratch on every single redeploy. This happened for real
+in production before this check existed; it's why the check exists.

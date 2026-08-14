@@ -78,3 +78,25 @@ if (config.isProduction && (!config.clerkSecretKey || !config.clerkPublishableKe
     "CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY must both be set in production",
   );
 }
+
+// USERS_DB_PATH silently defaulting to "./data/cheese-users.sqlite" (resolved
+// against the SERVER CODE directory, not the deploy host's persistent volume)
+// is exactly how a real production incident happened: every fresh deploy got
+// a brand-new, empty container filesystem at that path, so the entire user
+// database — accounts, puzzle stats, rating history, everything — was
+// silently recreated from scratch on every single deploy. It only ever
+// became visible once the profile page's public GET (which correctly does
+// NOT self-heal a missing username, unlike getOrCreateUser) started 404ing
+// for real, pre-existing accounts. DB_PATH already gets this right in
+// practice (always pointed at the volume explicitly), but nothing enforced
+// it — this makes the same requirement explicit and fails the boot loudly
+// rather than starting up and quietly wiping data on a host that forgot to
+// set it. See "Deployment notes" in README.md.
+if (config.isProduction && !readEnv("USERS_DB_PATH")) {
+  throw new Error(
+    "USERS_DB_PATH must be explicitly set in production, pointing at a path on " +
+      "the persistent volume (the same one DB_PATH uses) — the relative default " +
+      "resolves inside the container's own ephemeral filesystem, not the volume, " +
+      "which silently discards the entire user database on every deploy.",
+  );
+}

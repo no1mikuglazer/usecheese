@@ -274,11 +274,29 @@ export async function recordPuzzleResult(clerkUserId, puzzleId, failed, usedHint
  * Assembles identity, customization, stats, and the three derived
  * insight sections (recent activity, rating history, theme breakdown)
  * in one response so the profile page needs exactly one fetch.
+ *
+ * `viewerClerkUserId` (optional — undefined for a signed-out visitor) lets
+ * this self-heal exactly one case: a signed-in viewer whose own row doesn't
+ * exist yet, e.g. a brand-new signup who opens their own profile before
+ * ever hitting /api/users/me (which is what normally creates it, via the
+ * puzzles page). getOrCreateUser() only ever creates a row for the CALLER's
+ * own clerk_user_id, so this can never fabricate a profile for someone
+ * else's mistyped or genuinely nonexistent username — if the freshly
+ * created row's username doesn't match what was actually requested, this
+ * still 404s, same as before.
  */
-export async function getPublicProfile(username) {
+export async function getPublicProfile(username, viewerClerkUserId) {
   const stmts = getStatements();
 
-  const user = stmts.byUsername.get(username);
+  let user = stmts.byUsername.get(username);
+
+  if (!user && viewerClerkUserId) {
+    const own = await getOrCreateUser(viewerClerkUserId);
+    if (own.username === username) {
+      user = stmts.byUsername.get(username);
+    }
+  }
+
   if (!user) {
     throw ApiError.notFound("user_not_found");
   }

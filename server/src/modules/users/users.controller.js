@@ -22,7 +22,13 @@ export async function submitPuzzleResult(req, res) {
 
 export async function publicProfile(req, res) {
   const { username } = req.validated.params;
-  const profile = await usersService.getPublicProfile(username);
+  // getAuth() is safe to call unconditionally — clerkMiddleware() is mounted
+  // globally (see requireAuth.js's own header), so this just returns a null
+  // userId for a signed-out visitor rather than throwing. Passed through so
+  // getPublicProfile can self-heal the ONE case where that's actually safe:
+  // a signed-in viewer looking at their own, not-yet-created profile.
+  const { userId } = getAuth(req);
+  const profile = await usersService.getPublicProfile(username, userId);
   res.json(profile);
 }
 
