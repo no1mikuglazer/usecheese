@@ -45,8 +45,32 @@
             ? "http://localhost:3001/api"
             : "https://api.usecheese.xyz/api";
 
+        /* The solver's saved difficulty, read here so the prefetch asks for
+           the range the page is actually about to show. Without this, anyone
+           who had ever changed difficulty would prefetch 1400-1800, have
+           loadNewPuzzle() correctly reject it as out of range, and pay for a
+           second request anyway — turning the optimization above into pure
+           waste for exactly the people who use the page most.
+
+           Kept in sync with PUZZLE_RANGE_KEY and readRatingRange() in
+           pages/puzzles/script.js, which applies the same value to the inputs
+           below (with the same clamping) before the first load. */
         var min = 1400;
         var max = 1800;
+
+        try {
+          var saved = JSON.parse(localStorage.getItem("cheesePuzzleRange"));
+          if (saved && isFinite(saved.min) && isFinite(saved.max)) {
+            var lo = Math.min(Math.max(saved.min, 0), 3500);
+            var hi = Math.min(Math.max(saved.max, 0), 3500);
+            if (lo > hi) { var swap = lo; lo = hi; hi = swap; }
+            min = lo;
+            max = hi;
+          }
+        } catch (e) {
+          /* unreadable, unavailable, or corrupt storage — keep the defaults,
+             which still match the inputs' own initial values below. */
+        }
 
         var promise = fetch(
           window.CHEESE_API_BASE +
@@ -69,6 +93,7 @@
     <link rel="stylesheet" href="../../assets/css/nav.css" />
     <link rel="stylesheet" href="../../assets/css/board-layout.css" />
     <link rel="stylesheet" href="../../assets/css/cheese-dialogs.css" />
+    <link rel="stylesheet" href="../../assets/css/error-state.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="../../mobile-gate.css" />
   </head>
@@ -82,7 +107,7 @@
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
-        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+        <p class="mobile-gate-text">Cheese v1.4 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
       </div>
     </div>
 
@@ -118,12 +143,14 @@
           </a>
         </li>
 
-        <a href="../puzzles/index.html" class="left-nav-item left-nav-active">
-          <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-          </svg>
-          <span>Puzzles</span>
-        </a>
+        <li>
+          <a href="../puzzles/index.html" class="left-nav-item left-nav-active">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+            <span>Puzzles</span>
+          </a>
+        </li>
 
         <li>
           <a href="../training/index.html" class="left-nav-item left-nav-item-link">
@@ -145,8 +172,9 @@
 
       </ul>
 
-      <!-- Visuals only for now — see pages/signup/, pages/login/. Stage 2
-           replaces this with real signed-in/signed-out state. -->
+      <!-- The signed-out state. assets/js/clerk-client.js swaps this block for
+           the account row once Clerk confirms a session, and reveals whichever
+           one is correct — see .left-nav-auth in assets/css/nav.css. -->
       <div class="left-nav-auth">
         <a href="../signup/index.html" class="left-nav-auth-btn left-nav-auth-btn-primary">Sign Up</a>
         <a href="../login/index.html" class="left-nav-auth-btn left-nav-auth-btn-ghost">Log In</a>
@@ -251,6 +279,36 @@
           <div class="player-left">
             <div class="player-pfp white-pfp" id="pzSolverPfp"></div>
             <div class="player-name" id="pzSolverName">You</div>
+          </div>
+        </div>
+
+        <!-- OFFLINE TAKEOVER — shown in place of the board and player bars when
+             the puzzle API cannot be reached at all. Only for errors the solver
+             can do nothing about from this page: a rating range with no puzzles
+             in it stays in the sidebar status banner instead, because widening
+             the range fixes it without leaving the page. Styling is shared with
+             404.html via assets/css/error-state.css; visibility is driven by
+             .pz-board-offline on .board-area (see pages/puzzles/style.css and
+             setBoardOffline() in script.js). -->
+        <div class="cheese-error pz-offline" id="pzOfflinePanel">
+          <div class="cheese-error-card">
+
+            <svg class="cheese-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/>
+            </svg>
+
+            <span class="cheese-error-code">Connection Error</span>
+            <h2 class="cheese-error-title">Puzzles are offline</h2>
+            <p class="cheese-error-text">
+              We can&rsquo;t reach the Cheese puzzle server right now. Analysis,
+              Training, the Opening Explorer and Master Games all still work.
+            </p>
+
+            <div class="cheese-error-actions">
+              <button type="button" class="cheese-error-btn cheese-error-btn-primary" id="pzOfflineRetryBtn">Try Again</button>
+              <a class="cheese-error-btn cheese-error-btn-ghost" href="../../index.html">Back to Home</a>
+            </div>
+
           </div>
         </div>
 

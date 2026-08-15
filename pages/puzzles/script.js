@@ -278,6 +278,7 @@ const attemptCountEl = document.getElementById("pzAttemptCount");
 const streakCountEl = document.getElementById("pzStreakCount");
 const headerStatEl = document.getElementById("pzHeaderStat");
 const ratingPopupEl = document.getElementById("pzRatingPopup");
+const offlineRetryBtn = document.getElementById("pzOfflineRetryBtn");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
@@ -609,6 +610,29 @@ function setControlsBusy(busy) {
   retryBtn.disabled = busy || !currentPuzzle;
 }
 
+// ── Offline takeover ────────────────────────────────────────────────────────
+
+// Swaps the board and player bars for the shared error card (see
+// assets/css/error-state.css) and back. The class lives on .board-area so one
+// toggle drives both halves of the swap from CSS — see pages/puzzles/style.css.
+function setBoardOffline(offline) {
+  boardArea.classList.toggle("pz-board-offline", offline);
+}
+
+// Whether a failed load is something the solver can do nothing about from this
+// page, and so warrants replacing the board rather than a line in the sidebar.
+//
+// "no_puzzles_in_range" deliberately does NOT qualify: it means the server is
+// perfectly reachable and answered, and widening the range in the sidebar
+// fixes it — taking the board away would hide the controls needed to recover.
+function isServerUnreachable(err) {
+  if (!err) return false;
+  if (err.code === "network_error") return true;
+  // 5xx: the request arrived but the server could not answer it. Includes the
+  // 503 that /api/health returns when its SQLite database is unreachable.
+  return typeof err.status === "number" && err.status >= 500;
+}
+
 // ── Move history / keyboard navigation ──────────────────────────────────────
 
 // Snapshot the live position into history. Called only after currentNode has
@@ -821,17 +845,27 @@ function onPuzzleSolved() {
   setControlsBusy(false); // also disables Hint, since the state is no longer SOLVING
 
   if (isSignedIn && currentPuzzle && !scoredPuzzleIds.has(currentPuzzle.id)) {
-    scoredPuzzleIds.add(currentPuzzle.id);
-    submitPuzzleResult(currentPuzzle.id, failedThisPuzzle, usedHint)
+    // Added before the request, not after, so a second solve landing while
+    // this one is still in flight cannot submit the same puzzle twice.
+    // Captured in a local because currentPuzzle can change before it settles.
+    const submittedId = currentPuzzle.id;
+    scoredPuzzleIds.add(submittedId);
+
+    submitPuzzleResult(submittedId, failedThisPuzzle, usedHint)
       .then((result) => {
         animateRatingValue(result.puzzleStats.rating - result.delta, result.puzzleStats.rating);
         showRatingPopup(result.delta);
       })
       .catch(() => {
-        // Non-critical — the header keeps showing the last known rating.
-        // scoredPuzzleIds already has this id, matching the "once per
-        // puzzle this session" rule even though this particular attempt
-        // didn't actually reach the server.
+        // The attempt never reached the server, so it was not scored and the
+        // rating on screen is unchanged. Say so: silently dropping a solve
+        // makes the rating look broken rather than offline.
+        //
+        // Releasing the id also matters — the once-per-session guard exists to
+        // stop double-scoring a puzzle that WAS scored. Holding an id that
+        // never was would mean re-solving this puzzle could never count.
+        scoredPuzzleIds.delete(submittedId);
+        statusSubEl.textContent = "Rating not saved — connection issue";
       });
   }
 }
@@ -852,6 +886,58 @@ function readRatingRange() {
   minRatingInput.value = String(min);
   maxRatingInput.value = String(max);
   return { min, max };
+}
+
+// ── Difficulty persistence ──────────────────────────────────────────────────
+// The difficulty controls already exist; they just reset to Medium on every
+// reload, so anyone working through Hard or Expert had to re-pick on each
+// visit. Nothing new is added to the page — the same six buttons and two
+// inputs simply come back the way they were left.
+//
+// Only the two numbers are stored. Which preset is highlighted is derived from
+// them, so the button and the inputs cannot drift out of agreement.
+//
+// IMPORTANT: the in-<head> prefetch in pages/puzzles/index.html reads this same
+// key, with the same clamping, so its request matches the range applied here.
+// Changing the key or the clamping means changing it there too.
+const PUZZLE_RANGE_KEY = "cheesePuzzleRange";
+
+function saveRatingRange(min, max) {
+  try {
+    localStorage.setItem(PUZZLE_RANGE_KEY, JSON.stringify({ min, max }));
+  } catch (e) {
+    // Same posture as the anon counter above: failing to persist is
+    // acceptable, the range still applies for this session.
+  }
+}
+
+// Highlight whichever preset matches the range exactly. A custom range matches
+// none and clears them all — the rule the change handler already applied by
+// hand, now derived in one place so a restored range highlights correctly too.
+function syncPresetToRange(min, max) {
+  presetsEl.querySelectorAll(".pz-preset").forEach((b) => {
+    b.classList.toggle(
+      "pz-preset-active",
+      Number(b.dataset.min) === min && Number(b.dataset.max) === max,
+    );
+  });
+}
+
+function applySavedRatingRange() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(PUZZLE_RANGE_KEY));
+  } catch (e) {
+    return; // unreadable, unavailable, or corrupt → the HTML defaults stand
+  }
+  if (!saved || !Number.isFinite(saved.min) || !Number.isFinite(saved.max)) return;
+
+  minRatingInput.value = String(saved.min);
+  maxRatingInput.value = String(saved.max);
+  // Re-run the normal path so a hand-edited value is clamped and swapped by
+  // exactly the same rules as typed input, never trusted straight from storage.
+  const { min, max } = readRatingRange();
+  syncPresetToRange(min, max);
 }
 
 function setupPuzzle(puzzle) {
@@ -984,20 +1070,36 @@ async function loadNewPuzzle() {
       updateAnonRemainingDisplay();
     }
 
+    // Cleared here rather than when the request starts: leaving the error card
+    // up for the duration of a retry means the board is never briefly restored
+    // only to be taken away again when the retry also fails.
+    setBoardOffline(false);
     setupPuzzle(puzzle);
   } catch (err) {
     if (token !== activeLoadToken) return; // a newer load owns the UI now
 
     puzzleState = PUZZLE_STATE.ERROR;
     currentPuzzle = null;
+    // The meta row described the puzzle that just went away with it — leaving
+    // its rating on screen next to an error reads as live detail about a
+    // puzzle that is no longer loaded.
+    ratingEl.textContent = "—";
     setControlsBusy(false);
     retryBtn.disabled = true;
     hintBtn.disabled = true;
 
+    // The board is useless without a puzzle and there is nothing on this page
+    // to adjust, so an unreachable server hands the whole board area to the
+    // error card — the only thing on screen then offering a way out. Set on
+    // every failure, not just the unreachable one, so an error that follows an
+    // offline spell (a bad range, say) restores the board it needs.
+    const unreachable = isServerUnreachable(err);
+    setBoardOffline(unreachable);
+
     if (err.code === "no_puzzles_in_range") {
       setStatus("pz-status-wrong", "No puzzles found", "Try a wider rating range");
-    } else if (err.code === "network_error") {
-      setStatus("pz-status-wrong", "Server unreachable", "Is the Cheese API running?");
+    } else if (unreachable) {
+      setStatus("pz-status-wrong", "Puzzles are offline", "Can't reach the server");
     } else {
       setStatus("pz-status-wrong", "Could not load a puzzle", "Please try again");
     }
@@ -1299,21 +1401,48 @@ presetsEl.addEventListener("click", (e) => {
 
   minRatingInput.value = btn.dataset.min;
   maxRatingInput.value = btn.dataset.max;
+  const range = readRatingRange();
+  saveRatingRange(range.min, range.max);
   loadNewPuzzle();
+});
+
+// The offline card's own retry. Unlike the sidebar buttons — which are hidden
+// behind the card and stay disabled through the error state — this one carries
+// its own busy label, because while it runs the card is the entire screen and
+// nothing else could show that anything is happening.
+offlineRetryBtn.addEventListener("click", async () => {
+  const label = offlineRetryBtn.textContent;
+  offlineRetryBtn.disabled = true;
+  offlineRetryBtn.textContent = "Trying…";
+  try {
+    await loadNewPuzzle();
+  } finally {
+    // Restored even on success: the card is hidden by then, and leaving it
+    // disabled would strand the button if the server drops again later.
+    offlineRetryBtn.disabled = false;
+    offlineRetryBtn.textContent = label;
+  }
 });
 
 // Typing a custom range clears the preset selection — the buttons no longer
 // describe what is in the inputs.
 [minRatingInput, maxRatingInput].forEach((input) => {
   input.addEventListener("change", () => {
-    readRatingRange();
-    presetsEl
-      .querySelectorAll(".pz-preset")
-      .forEach((b) => b.classList.remove("pz-preset-active"));
+    const { min, max } = readRatingRange();
+    // Derived rather than blanket-cleared: a custom range still matches no
+    // preset and clears them all, but typing a range that happens to equal a
+    // preset now highlights it instead of leaving the row misleadingly empty.
+    syncPresetToRange(min, max);
+    saveRatingRange(min, max);
   });
 });
 
 // ── Boot ────────────────────────────────────────────────────────────────────
+
+// Before the first loadNewPuzzle() below, so the opening request uses the
+// solver's own difficulty — and matches what the <head> prefetch already
+// asked for, letting that prefetch actually be used.
+applySavedRatingRange();
 
 updateSessionDisplay();
 

@@ -147,47 +147,6 @@ a.left-nav-item-link:hover {
     border-radius: 0 3px 3px 0;
 }
 
-/* DISABLED */
-
-.left-nav-disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
-.left-nav-disabled:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.65);
-    transform: translateX(3px);
-    opacity: 0.65;
-}
-
-/* COMING SOON tooltip */
-
-.left-nav-disabled::after {
-    content: attr(data-soon);
-    position: absolute;
-    left: calc(100% + 12px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-    background: rgba(20, 26, 45, 0.96);
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 7px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 200;
-}
-
-.left-nav-disabled:hover::after {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-}
-
 /* ICON */
 
 .left-nav-icon {
@@ -211,8 +170,9 @@ a.left-nav-item-link:hover {
 
 /* AUTH BUTTONS — pinned to the bottom of the sidebar via .left-nav-items'
    flex:1 above pushing this sibling block down, no extra positioning
-   needed. Visuals only for now (see pages/signup/, pages/login/); Stage 2
-   replaces this block with real signed-in/signed-out state. */
+   needed. These are the signed-out buttons; assets/js/clerk-client.js
+   replaces the block's contents with the account row once Clerk confirms a
+   session, and reveals whichever one is correct via .left-nav-auth-ready. */
 
 .left-nav-auth {
     display: flex;

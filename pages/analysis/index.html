@@ -25,7 +25,7 @@
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
-        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+        <p class="mobile-gate-text">Cheese v1.4 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
       </div>
     </div>
     <!-- LEFT NAV SIDEBAR -->
@@ -43,12 +43,14 @@
 
       <ul class="left-nav-items">
 
-        <a href="index.html" class="left-nav-item left-nav-active">
-          <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-          <span>Analysis</span>
-        </a>
+        <li>
+          <a href="index.html" class="left-nav-item left-nav-active">
+            <svg class="left-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span>Analysis</span>
+          </a>
+        </li>
 
         <li>
           <a href="../opening-explorer/index.html" class="left-nav-item left-nav-item-link">
@@ -88,8 +90,9 @@
 
       </ul>
 
-      <!-- Visuals only for now — see pages/signup/, pages/login/. Stage 2
-           replaces this with real signed-in/signed-out state. -->
+      <!-- The signed-out state. assets/js/clerk-client.js swaps this block for
+           the account row once Clerk confirms a session, and reveals whichever
+           one is correct — see .left-nav-auth in assets/css/nav.css. -->
       <div class="left-nav-auth">
         <a href="../signup/index.html" class="left-nav-auth-btn left-nav-auth-btn-primary">Sign Up</a>
         <a href="../login/index.html" class="left-nav-auth-btn left-nav-auth-btn-ghost">Log In</a>
@@ -115,8 +118,6 @@
 
             <div class="player-name" id="blackPlayerName">Black</div>
           </div>
-
-          <div class="player-clock" id="blackClock">10:00</div>
         </div>
 
         <!-- BOARD ROW: EVAL BAR + BOARD -->
@@ -293,16 +294,14 @@
         <!-- id="apToastAnchor": Analysis never flips its board (see
              pages/analysis/script.js), so this bar is always the bottom one.
              board-core.js's showToast() looks for this id to center toast
-             notifications in the gap between the player name and the clock
-             instead of the page-viewport center. -->
+             notifications in the bar's free space to the right of the player
+             name, instead of the page-viewport center. -->
         <div class="player white-player" id="apToastAnchor">
           <div class="player-left">
             <div class="player-pfp white-pfp"></div>
 
             <div class="player-name" id="whitePlayerName">White</div>
           </div>
-
-          <div class="player-clock" id="whiteClock">10:00</div>
         </div>
       </div>
 

@@ -210,24 +210,6 @@
     white-space:nowrap;
 }
 
-/* CLOCK */
-
-.player-clock{
-
-    font-size:clamp(14px, 1.05vw, 18px);
-
-    font-weight:700;
-
-    background:
-    rgba(255,255,255,0.08);
-
-    padding:clamp(4px, 0.5vw, 6px) clamp(8px, 1vw, 12px);
-
-    border-radius:8px;
-
-    flex-shrink:0;
-}
-
 /* BOARD */
 
 .board{
