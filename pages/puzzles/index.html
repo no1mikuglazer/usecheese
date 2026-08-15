@@ -69,6 +69,7 @@
     <link rel="stylesheet" href="../../assets/css/nav.css" />
     <link rel="stylesheet" href="../../assets/css/board-layout.css" />
     <link rel="stylesheet" href="../../assets/css/cheese-dialogs.css" />
+    <link rel="stylesheet" href="../../assets/css/error-state.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="../../mobile-gate.css" />
   </head>
@@ -251,6 +252,36 @@
           <div class="player-left">
             <div class="player-pfp white-pfp" id="pzSolverPfp"></div>
             <div class="player-name" id="pzSolverName">You</div>
+          </div>
+        </div>
+
+        <!-- OFFLINE TAKEOVER — shown in place of the board and player bars when
+             the puzzle API cannot be reached at all. Only for errors the solver
+             can do nothing about from this page: a rating range with no puzzles
+             in it stays in the sidebar status banner instead, because widening
+             the range fixes it without leaving the page. Styling is shared with
+             404.html via assets/css/error-state.css; visibility is driven by
+             .pz-board-offline on .board-area (see pages/puzzles/style.css and
+             setBoardOffline() in script.js). -->
+        <div class="cheese-error pz-offline" id="pzOfflinePanel">
+          <div class="cheese-error-card">
+
+            <svg class="cheese-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/>
+            </svg>
+
+            <span class="cheese-error-code">Connection Error</span>
+            <h2 class="cheese-error-title">Puzzles are offline</h2>
+            <p class="cheese-error-text">
+              We can&rsquo;t reach the Cheese puzzle server right now. Analysis,
+              Training, the Opening Explorer and Master Games all still work.
+            </p>
+
+            <div class="cheese-error-actions">
+              <button type="button" class="cheese-error-btn cheese-error-btn-primary" id="pzOfflineRetryBtn">Try Again</button>
+              <a class="cheese-error-btn cheese-error-btn-ghost" href="../../index.html">Back to Home</a>
+            </div>
+
           </div>
         </div>
 

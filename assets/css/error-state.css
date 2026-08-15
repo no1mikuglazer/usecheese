@@ -1,0 +1,159 @@
+/* Cheese — shared error state
+   One visual treatment for every "something went wrong and there is nothing
+   the page can render" moment, so they read as one system rather than as
+   unrelated one-off screens. Currently used by:
+
+     404.html                    — an unknown URL (served by Cloudflare Pages)
+     pages/puzzles/index.html    — the puzzle API being unreachable
+
+   Deliberately matches the glass-card language already established by
+   mobile-gate.css (same blur, radius, border, shadow) and the button styling
+   from assets/css/nav.css, so an error screen looks like part of Cheese
+   instead of a browser default.
+
+   Two layout modes, same card:
+     .cheese-error                 fills whatever box it is placed in
+     .cheese-error-fullscreen      pins to the viewport (the 404 page)
+
+   Every error built on this MUST offer a way back into the site — that is the
+   whole point of the block, not decoration. */
+
+.cheese-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.cheese-error-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    /* Subtle scrim so the card holds contrast over any background image,
+       matching mobile-gate.css's treatment. */
+    background: radial-gradient(120% 120% at 50% 38%,
+                rgba(6, 9, 16, 0.32), rgba(6, 9, 16, 0.64));
+}
+
+.cheese-error-card {
+    width: min(92%, 460px);
+    padding: 40px 34px 34px;
+    text-align: center;
+    background: rgba(15, 19, 27, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    backdrop-filter: blur(22px) saturate(130%);
+    color: #f2f5fb;
+    font-family: Arial, sans-serif;
+    animation: cheeseErrorPop 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes cheeseErrorPop {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cheese-error-icon {
+    width: 48px;
+    height: 48px;
+    color: rgba(244, 247, 253, 0.85);
+    margin-bottom: 20px;
+}
+
+/* The oversized "404" / status line above the title. Optional. */
+.cheese-error-code {
+    display: block;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.4px;
+    text-transform: uppercase;
+    color: rgba(233, 238, 246, 0.45);
+    margin-bottom: 10px;
+}
+
+.cheese-error-title {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #eef1f8;
+    margin: 0 0 12px 0;
+}
+
+.cheese-error-text {
+    font-size: 14px;
+    line-height: 1.65;
+    color: rgba(233, 238, 246, 0.78);
+    margin: 0;
+}
+
+/* ACTIONS — the way back. Side by side, wrapping on a narrow card. */
+
+.cheese-error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 26px;
+}
+
+.cheese-error-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+    box-sizing: border-box;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: transform 0.18s ease, background 0.18s ease,
+                border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cheese-error-btn-primary {
+    background: rgba(244, 247, 253, 0.95);
+    color: #0c1018;
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.cheese-error-btn-primary:hover {
+    background: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+}
+
+.cheese-error-btn-ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.cheese-error-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.cheese-error-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+}
+
+.cheese-error-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.65);
+    outline-offset: 2px;
+}

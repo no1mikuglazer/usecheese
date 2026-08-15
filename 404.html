@@ -1,0 +1,80 @@
+<!doctype html>
+<!-- Cheese — 404 page
+
+     Cloudflare Pages serves this file automatically for any path that does not
+     match a real file. No _redirects rule and no dashboard config is involved.
+
+     IMPORTANT: it is served AT THE REQUESTED URL, not at /404.html. A miss on
+     /pages/analysis/foo renders this document with the browser's base URL still
+     at /pages/analysis/, so every path below MUST be root-absolute. A relative
+     href here would resolve against the bad URL, 404 in turn, and leave an
+     unstyled error page — the one page on the site that cannot afford to look
+     broken. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cheese — Page Not Found</title>
+    <meta name="description" content="This Cheese page could not be found." />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg?v=1" />
+    <link rel="stylesheet" href="/assets/css/error-state.css" />
+    <link rel="stylesheet" href="/mobile-gate.css" />
+
+    <!-- Only the page background is needed here, so it is inlined rather than
+         pulling in a full page stylesheet for two rules. -->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        background-image: url("/assets/backgrounds/custom_bg1.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <!-- MOBILE GATE (small viewports only) -->
+    <div class="mobile-gate">
+      <div class="mobile-gate-card">
+        <svg class="mobile-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
+        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+      </div>
+    </div>
+
+    <!-- NOT FOUND -->
+    <div class="cheese-error cheese-error-fullscreen">
+      <div class="cheese-error-card">
+
+        <svg class="cheese-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="12"/><line x1="11" y1="14.5" x2="11" y2="14.5"/>
+        </svg>
+
+        <span class="cheese-error-code">Error 404</span>
+        <h1 class="cheese-error-title">Page not found</h1>
+        <p class="cheese-error-text">
+          This page doesn&rsquo;t exist &mdash; it may have been moved, or the link
+          that brought you here might be wrong. Everything else on Cheese is
+          working normally.
+        </p>
+
+        <div class="cheese-error-actions">
+          <a class="cheese-error-btn cheese-error-btn-primary" href="/">Back to Home</a>
+          <a class="cheese-error-btn cheese-error-btn-ghost" href="/pages/analysis/index.html">Go to Analysis</a>
+        </div>
+
+      </div>
+    </div>
+
+  </body>
+</html>

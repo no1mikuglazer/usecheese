@@ -278,6 +278,7 @@ const attemptCountEl = document.getElementById("pzAttemptCount");
 const streakCountEl = document.getElementById("pzStreakCount");
 const headerStatEl = document.getElementById("pzHeaderStat");
 const ratingPopupEl = document.getElementById("pzRatingPopup");
+const offlineRetryBtn = document.getElementById("pzOfflineRetryBtn");
 
 // ── Rendering ───────────────────────────────────────────────────────────────
 
@@ -607,6 +608,29 @@ function setControlsBusy(busy) {
   nextBtn.disabled = busy;
   hintBtn.disabled = busy || puzzleState !== PUZZLE_STATE.SOLVING;
   retryBtn.disabled = busy || !currentPuzzle;
+}
+
+// ── Offline takeover ────────────────────────────────────────────────────────
+
+// Swaps the board and player bars for the shared error card (see
+// assets/css/error-state.css) and back. The class lives on .board-area so one
+// toggle drives both halves of the swap from CSS — see pages/puzzles/style.css.
+function setBoardOffline(offline) {
+  boardArea.classList.toggle("pz-board-offline", offline);
+}
+
+// Whether a failed load is something the solver can do nothing about from this
+// page, and so warrants replacing the board rather than a line in the sidebar.
+//
+// "no_puzzles_in_range" deliberately does NOT qualify: it means the server is
+// perfectly reachable and answered, and widening the range in the sidebar
+// fixes it — taking the board away would hide the controls needed to recover.
+function isServerUnreachable(err) {
+  if (!err) return false;
+  if (err.code === "network_error") return true;
+  // 5xx: the request arrived but the server could not answer it. Includes the
+  // 503 that /api/health returns when its SQLite database is unreachable.
+  return typeof err.status === "number" && err.status >= 500;
 }
 
 // ── Move history / keyboard navigation ──────────────────────────────────────
@@ -984,20 +1008,36 @@ async function loadNewPuzzle() {
       updateAnonRemainingDisplay();
     }
 
+    // Cleared here rather than when the request starts: leaving the error card
+    // up for the duration of a retry means the board is never briefly restored
+    // only to be taken away again when the retry also fails.
+    setBoardOffline(false);
     setupPuzzle(puzzle);
   } catch (err) {
     if (token !== activeLoadToken) return; // a newer load owns the UI now
 
     puzzleState = PUZZLE_STATE.ERROR;
     currentPuzzle = null;
+    // The meta row described the puzzle that just went away with it — leaving
+    // its rating on screen next to an error reads as live detail about a
+    // puzzle that is no longer loaded.
+    ratingEl.textContent = "—";
     setControlsBusy(false);
     retryBtn.disabled = true;
     hintBtn.disabled = true;
 
+    // The board is useless without a puzzle and there is nothing on this page
+    // to adjust, so an unreachable server hands the whole board area to the
+    // error card — the only thing on screen then offering a way out. Set on
+    // every failure, not just the unreachable one, so an error that follows an
+    // offline spell (a bad range, say) restores the board it needs.
+    const unreachable = isServerUnreachable(err);
+    setBoardOffline(unreachable);
+
     if (err.code === "no_puzzles_in_range") {
       setStatus("pz-status-wrong", "No puzzles found", "Try a wider rating range");
-    } else if (err.code === "network_error") {
-      setStatus("pz-status-wrong", "Server unreachable", "Is the Cheese API running?");
+    } else if (unreachable) {
+      setStatus("pz-status-wrong", "Puzzles are offline", "Can't reach the server");
     } else {
       setStatus("pz-status-wrong", "Could not load a puzzle", "Please try again");
     }
@@ -1300,6 +1340,24 @@ presetsEl.addEventListener("click", (e) => {
   minRatingInput.value = btn.dataset.min;
   maxRatingInput.value = btn.dataset.max;
   loadNewPuzzle();
+});
+
+// The offline card's own retry. Unlike the sidebar buttons — which are hidden
+// behind the card and stay disabled through the error state — this one carries
+// its own busy label, because while it runs the card is the entire screen and
+// nothing else could show that anything is happening.
+offlineRetryBtn.addEventListener("click", async () => {
+  const label = offlineRetryBtn.textContent;
+  offlineRetryBtn.disabled = true;
+  offlineRetryBtn.textContent = "Trying…";
+  try {
+    await loadNewPuzzle();
+  } finally {
+    // Restored even on success: the card is hidden by then, and leaving it
+    // disabled would strand the button if the server drops again later.
+    offlineRetryBtn.disabled = false;
+    offlineRetryBtn.textContent = label;
+  }
 });
 
 // Typing a custom range clears the preset selection — the buttons no longer

@@ -73,6 +73,35 @@ body {
 .square:has(.piece) { cursor: grab; }
 .square:has(.piece):active { cursor: grabbing; }
 
+/* =====================
+   OFFLINE TAKEOVER
+   ===================== */
+
+/* The card itself is styled by assets/css/error-state.css; these rules only
+   decide where it sits and when it replaces the board.
+
+   It takes over the exact box the board and both player bars occupied
+   (--board-size wide, --board-area-h tall, both from board-layout.css) so the
+   centred board+sidebar group keeps its geometry and the sidebar does not
+   shift sideways when the error appears. */
+
+.pz-offline {
+    display: none;
+    width: var(--board-size);
+    height: var(--board-area-h);
+}
+
+.board-area.pz-board-offline .pz-offline {
+    display: flex;
+}
+
+/* Hiding rather than removing: the squares keep their ids and listeners, so a
+   successful retry repaints the existing board with no re-wiring. */
+.board-area.pz-board-offline .board,
+.board-area.pz-board-offline .player {
+    display: none;
+}
+
 /* VALID MOVE DOTS */
 
 .valid-move::after {
