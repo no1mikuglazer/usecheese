@@ -18,7 +18,10 @@
 body {
     height: 100vh;
     overflow: auto;
-    background-image: url("assets/backgrounds/custom_bg1.png");
+    /* Relative to THIS stylesheet (assets/css/), not to index.html — a css
+       url() always resolves against the stylesheet's own location. Matches
+       auth.css, which sets the same background from this folder. */
+    background-image: url("../backgrounds/custom_bg1.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
