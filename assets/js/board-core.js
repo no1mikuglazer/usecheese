@@ -759,12 +759,16 @@ function readSavedAnalyses() {
   }
 }
 
-function writeSavedAnalyses(list) {
+// `failureMessage` lets a caller name the operation that actually failed —
+// this same writer backs deleting as well as saving, and "Could not save"
+// after pressing Delete describes the wrong action. Defaults to the save
+// wording, so existing callers (and Training) are unchanged.
+function writeSavedAnalyses(list, failureMessage) {
   try {
     localStorage.setItem(SAVED_ANALYSES_KEY, JSON.stringify(list));
     return true;
   } catch (e) {
-    showToast("Could not save — storage unavailable");
+    showToast(failureMessage || "Could not save — storage unavailable");
     return false;
   }
 }

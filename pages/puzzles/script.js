@@ -845,17 +845,27 @@ function onPuzzleSolved() {
   setControlsBusy(false); // also disables Hint, since the state is no longer SOLVING
 
   if (isSignedIn && currentPuzzle && !scoredPuzzleIds.has(currentPuzzle.id)) {
-    scoredPuzzleIds.add(currentPuzzle.id);
-    submitPuzzleResult(currentPuzzle.id, failedThisPuzzle, usedHint)
+    // Added before the request, not after, so a second solve landing while
+    // this one is still in flight cannot submit the same puzzle twice.
+    // Captured in a local because currentPuzzle can change before it settles.
+    const submittedId = currentPuzzle.id;
+    scoredPuzzleIds.add(submittedId);
+
+    submitPuzzleResult(submittedId, failedThisPuzzle, usedHint)
       .then((result) => {
         animateRatingValue(result.puzzleStats.rating - result.delta, result.puzzleStats.rating);
         showRatingPopup(result.delta);
       })
       .catch(() => {
-        // Non-critical — the header keeps showing the last known rating.
-        // scoredPuzzleIds already has this id, matching the "once per
-        // puzzle this session" rule even though this particular attempt
-        // didn't actually reach the server.
+        // The attempt never reached the server, so it was not scored and the
+        // rating on screen is unchanged. Say so: silently dropping a solve
+        // makes the rating look broken rather than offline.
+        //
+        // Releasing the id also matters — the once-per-session guard exists to
+        // stop double-scoring a puzzle that WAS scored. Holding an id that
+        // never was would mean re-solving this puzzle could never count.
+        scoredPuzzleIds.delete(submittedId);
+        statusSubEl.textContent = "Rating not saved — connection issue";
       });
   }
 }

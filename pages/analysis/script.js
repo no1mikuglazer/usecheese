@@ -818,7 +818,30 @@ document.addEventListener("keydown", (event) => {
 
 // new game
 
-newGameBtn.addEventListener("click", () => {
+newGameBtn.addEventListener("click", async () => {
+  // New discards the whole move tree, exactly as Delete beside it does, so it
+  // asks first for the same reason — and Training's New already does.
+  //
+  // Skipped when there is nothing to lose: an untouched board with no loaded
+  // position. mainlineTip() === root is the same "is there any analysis here"
+  // test saveCurrentAnalysis() uses to refuse an empty save, reused rather
+  // than inventing a second definition of empty. customPositionName is also
+  // checked because a named position (a loaded save, an imported PGN, an
+  // opening) is worth confirming even when it sits at the starting position.
+  const hasWork = mainlineTip() !== root || customPositionName;
+  if (hasWork) {
+    const ok = await cheeseDialogs.showConfirm(
+      "The current moves will be discarded. Save it first if you want to keep it.",
+      {
+        title: "Start a new analysis?",
+        confirmLabel: "Start New",
+        cancelLabel: "Cancel",
+        danger: true,
+      },
+    );
+    if (!ok) return;
+  }
+
   customPositionName = null;
 
   resetPlayerNames();
@@ -980,7 +1003,10 @@ function loadSavedAnalysis(entry) {
 
 function deleteSavedAnalysis(id) {
   const list = readSavedAnalyses().filter((x) => x.id !== id);
-  writeSavedAnalyses(list);
+  // writeSavedAnalyses() toasts its own failure. Bailing out on one matters:
+  // re-rendering from storage that still holds the entry would show the card
+  // vanish and come back, or worse look deleted until the next reload.
+  if (!writeSavedAnalyses(list, "Could not delete — storage unavailable")) return;
   renderSavedGames();
 }
 
@@ -1057,13 +1083,29 @@ if (tabGamesEl) tabGamesEl.addEventListener("click", () => switchTab("games"));
 exportPgnBtn.addEventListener("click", saveCurrentAnalysis);
 
 if (savedGamesListEl) {
-  savedGamesListEl.addEventListener("click", (e) => {
+  savedGamesListEl.addEventListener("click", async (e) => {
     const card = e.target.closest(".ap-game-card");
     if (!card) return;
     const id = card.dataset.id;
 
     if (e.target.closest(".ap-game-delete")) {
       e.stopPropagation();
+
+      // A saved analysis is the only thing on this page that outlives the
+      // session, and there is no undo — so this one asks by name, rather than
+      // discarding a study on a single mis-click of a small icon.
+      const doomed = readSavedAnalyses().find((x) => x.id === id);
+      const ok = await cheeseDialogs.showConfirm(
+        "This saved analysis will be permanently deleted.",
+        {
+          title: 'Delete "' + ((doomed && doomed.name) || "Untitled") + '"?',
+          confirmLabel: "Delete",
+          cancelLabel: "Cancel",
+          danger: true,
+        },
+      );
+      if (!ok) return;
+
       deleteSavedAnalysis(id);
       return;
     }
