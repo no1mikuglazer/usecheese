@@ -16,11 +16,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Disabled nav items never navigate ──────────────────────────────────
-    document.querySelectorAll('.left-nav-disabled').forEach(item => {
-        item.addEventListener('click', e => e.preventDefault());
-    });
-
     // ── DOM refs ────────────────────────────────────────────────────────────
     const searchInput = document.getElementById('oeSearchInput');
     const grid        = document.getElementById('oeGrid');

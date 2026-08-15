@@ -20,7 +20,7 @@
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
         <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
-        <p class="mobile-gate-text">Cheese v1.2 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+        <p class="mobile-gate-text">Cheese v1.4 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
       </div>
     </div>
 
@@ -86,8 +86,9 @@
 
       </ul>
 
-      <!-- Visuals only for now — see pages/signup/, pages/login/. Stage 2
-           replaces this with real signed-in/signed-out state. -->
+      <!-- The signed-out state. assets/js/clerk-client.js swaps this block for
+           the account row once Clerk confirms a session, and reveals whichever
+           one is correct — see .left-nav-auth in assets/css/nav.css. -->
       <div class="left-nav-auth">
         <a href="pages/signup/index.html" class="left-nav-auth-btn left-nav-auth-btn-primary">Sign Up</a>
         <a href="pages/login/index.html" class="left-nav-auth-btn left-nav-auth-btn-ghost">Log In</a>

@@ -661,25 +661,31 @@ function showToast(msg) {
 }
 
 // If the page has a #apToastAnchor player bar (a `.player` with the usual
-// `.player-left` name section and `.player-clock`), center the toast in the
-// gap between them instead of the default viewport-centered position — see
-// the id's placement in pages/analysis/index.html for why only that page
-// has it. Recomputed from the live rendered layout on every call, so it
-// tracks whatever the current board size/viewport actually is; pages
-// without the anchor (unaffected) just fall through to the CSS default.
+// `.player-left` name section), center the toast in the bar's free space
+// instead of the default viewport-centered position — see the id's placement
+// in pages/analysis/index.html for why only that page has it. Recomputed from
+// the live rendered layout on every call, so it tracks whatever the current
+// board size/viewport actually is; pages without the anchor (unaffected) just
+// fall through to the CSS default.
+//
+// The free space used to be measured against a `.player-clock` on the right.
+// Those clocks were fake — a hardcoded 10:00 that never ticked — and were
+// removed, so the span is now taken to the bar's own inner right edge, which
+// is where the empty space actually ends. Padding is subtracted so the result
+// is the centre of the visible gap rather than of the border box.
 function positionToastNearPlayerBar(toast) {
   const anchor = document.getElementById("apToastAnchor");
   const left = anchor && anchor.querySelector(".player-left");
-  const clock = anchor && anchor.querySelector(".player-clock");
-  if (!left || !clock) {
+  if (!left) {
     toast.style.top = "";
     toast.style.left = "";
     return;
   }
   const leftRect = left.getBoundingClientRect();
-  const clockRect = clock.getBoundingClientRect();
   const anchorRect = anchor.getBoundingClientRect();
-  toast.style.left = (leftRect.right + clockRect.left) / 2 + "px";
+  const paddingRight = parseFloat(getComputedStyle(anchor).paddingRight) || 0;
+  const innerRight = anchorRect.right - paddingRight;
+  toast.style.left = (leftRect.right + innerRight) / 2 + "px";
   toast.style.top = anchorRect.top + anchorRect.height / 2 + "px";
 }
 

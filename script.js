@@ -15,14 +15,4 @@ document.addEventListener('DOMContentLoaded', () => {
         logoLink.addEventListener('click', e => e.preventDefault());
     }
 
-    // Prevent disabled nav items from navigating
-    document.querySelectorAll('.left-nav-disabled').forEach(item => {
-        item.addEventListener('click', e => e.preventDefault());
-    });
-
-    // Prevent disabled action cards from navigating
-    document.querySelectorAll('.action-card-disabled').forEach(card => {
-        card.addEventListener('click', e => e.preventDefault());
-    });
-
 });

@@ -179,39 +179,12 @@ function updateEvalBar(evalValue) {
 
   evalNum = Math.max(-10, Math.min(10, evalNum));
 
+  // -10..+10 mapped onto 0..100% of the bar's height.
   const percent = ((evalNum + 10) / 20) * 100;
 
   evalFill.style.height = `${percent}%`;
   evalText.textContent =
     evalNum > 0 ? `+${evalNum.toFixed(1)}` : evalNum.toFixed(1);
-
-  // normal eval
-
-  let numericEval = parseFloat(evalValue);
-
-  if (isNaN(numericEval)) {
-    numericEval = 0;
-  }
-
-  // clamp
-
-  numericEval = Math.max(-10, Math.min(10, numericEval));
-
-  // convert
-
-  const percentage = 50 + numericEval * 5;
-
-  // apply
-
-  evalFill.style.height = `${percentage}%`;
-
-  // text
-
-  if (numericEval > 0) {
-    evalText.textContent = "+" + numericEval.toFixed(1);
-  } else {
-    evalText.textContent = numericEval.toFixed(1);
-  }
 }
 
 // render board

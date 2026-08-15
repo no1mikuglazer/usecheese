@@ -1,14 +1,4 @@
 /* Cheese — Training page */
-// engine
-
-let analysisTimeout = null;
-
-const STOCKFISH_VERSION = "Stockfish 18 Lite";
-
-// Training has no engine yet — a stub so every engine.* call is a harmless
-// no-op. Real Stockfish integration is added in a later step.
-const engine = { postMessage() {}, onmessage: null, terminate() {} };
-
 // chess
 
 const chess = new Chess();
@@ -25,23 +15,11 @@ const boardAnnotations = attachBoardAnnotations(document.querySelector(".board")
 
 const moveTreeContainer = document.getElementById("moveTree");
 
-const evalScore = document.getElementById("evalScore");
-
-const engineDepth = document.getElementById("engineDepth");
-
-const bestMoveText = document.getElementById("bestMove");
-
-const evalFill = document.getElementById("evalFill");
-
-const evalText = document.getElementById("evalText");
-
 const newGameBtn = document.getElementById("newGameBtn");
 
 const deleteGameBtn = document.getElementById("deleteGameBtn");
 
 const exportPgnBtn = document.getElementById("exportPgnBtn");
-
-const loadPgnBtn = document.getElementById("loadPgnBtn");
 
 const undoMoveBtn = document.getElementById("undoMoveBtn");
 
@@ -129,81 +107,6 @@ function analyzePosition() {
   // Training does not analyse positions — the engine is disabled here.
 }
 
-// eval bar
-
-function updateEvalBar(evalValue) {
-  // Game is already over
-  if (chess.in_checkmate()) {
-    if (chess.turn() === "b") {
-      // Black is checkmated
-      evalFill.style.height = "100%";
-      evalText.textContent = "1-0";
-    } else {
-      // White is checkmated
-      evalFill.style.height = "0%";
-      evalText.textContent = "0-1";
-    }
-    return;
-  }
-
-  // Mate handling
-  if (typeof evalValue === "string" && evalValue.includes("M")) {
-    const mateValue = parseInt(evalValue.replace("M", ""));
-
-    if (mateValue > 0) {
-      evalFill.style.height = "100%";
-      evalText.textContent = evalValue;
-    } else {
-      evalFill.style.height = "0%";
-      evalText.textContent = evalValue;
-    }
-
-    return;
-  }
-
-  // Normal centipawn evaluation
-  let evalNum = parseFloat(evalValue);
-
-  if (isNaN(evalNum)) {
-    evalNum = 0;
-  }
-
-  evalNum = Math.max(-10, Math.min(10, evalNum));
-
-  const percent = ((evalNum + 10) / 20) * 100;
-
-  evalFill.style.height = `${percent}%`;
-  evalText.textContent =
-    evalNum > 0 ? `+${evalNum.toFixed(1)}` : evalNum.toFixed(1);
-
-  // normal eval
-
-  let numericEval = parseFloat(evalValue);
-
-  if (isNaN(numericEval)) {
-    numericEval = 0;
-  }
-
-  // clamp
-
-  numericEval = Math.max(-10, Math.min(10, numericEval));
-
-  // convert
-
-  const percentage = 50 + numericEval * 5;
-
-  // apply
-
-  evalFill.style.height = `${percentage}%`;
-
-  // text
-
-  if (numericEval > 0) {
-    evalText.textContent = "+" + numericEval.toFixed(1);
-  } else {
-    evalText.textContent = numericEval.toFixed(1);
-  }
-}
 
 // render board
 
@@ -494,8 +397,6 @@ function showPromotionPicker(from, to) {
   const pieces = ["q", "r", "b", "n"];
   const orderedPieces = isWhite ? pieces : [...pieces].reverse();
   const toSquareEl = document.getElementById(to);
-  const boardEl = document.querySelector(".board");
-  const boardRect = boardEl.getBoundingClientRect();
   const squareRect = toSquareEl.getBoundingClientRect();
   const squareSize = squareRect.width;
   const popup = document.createElement("div");
@@ -638,132 +539,6 @@ document.addEventListener("touchend", onDragEnd);
 // addMoveTreeClickEvents, createEngineContinuation, addEngineLineClickEvents —
 // moved to assets/js/board-core.js
 
-// engine output
-
-engine.onmessage = function (event) {
-  const line = event.data;
-
-  if (line.includes("depth")) {
-    const depthMatch = line.match(/depth (\d+)/);
-
-    if (depthMatch) {
-      engineDepth.textContent =
-        "depth=" + depthMatch[1] + " | " + STOCKFISH_VERSION;
-    }
-  }
-
-  // evaluation
-
-  if (line.includes("score cp")) {
-    const scoreMatch = line.match(/score cp (-?\d+)/);
-
-    if (scoreMatch) {
-      let score = parseInt(scoreMatch[1]);
-
-      // Stockfish reports score from the side to move; convert to white-relative
-      const tempChessEval = new Chess(currentNode.fen);
-      if (tempChessEval.turn() === "b") score = -score;
-
-      score = (score / 100).toFixed(1);
-
-      currentNode.engineEval = score;
-
-      // show sign
-      const displayScore = parseFloat(score) > 0 ? "+" + score : score;
-
-      evalScore.textContent = displayScore;
-
-      updateEvalBar(score);
-    }
-  }
-
-  // mate
-
-  if (line.includes("score mate")) {
-    const mateMatch = line.match(/score mate (-?\d+)/);
-
-    if (mateMatch) {
-      let mateNum = parseInt(mateMatch[1]);
-
-      // flip for black's turn
-      const tempChessMate = new Chess(currentNode.fen);
-      if (tempChessMate.turn() === "b") mateNum = -mateNum;
-
-      const mateStr = "M" + mateNum;
-
-      evalScore.textContent = mateStr;
-
-      updateEvalBar(mateStr);
-    }
-  }
-
-  // pv
-
-  if (line.includes(" pv ")) {
-    const pv = line.split(" pv ")[1];
-
-    if (!pv) return;
-
-    const uciMoves = pv.trim().split(" ");
-
-    latestEngineUCILine = uciMoves;
-
-    currentNode.engineLine = uciMoves;
-
-    const tempChess = new Chess(currentNode.fen);
-
-    let html = "";
-
-    let currentMoveNumber = Math.floor(currentNode.ply / 2) + 1;
-
-    let startsWithBlack = currentNode.ply % 2 === 1;
-
-    // 5 FULL MOVES
-
-    const moveLimit = 10;
-
-    for (let i = 0; i < Math.min(uciMoves.length, moveLimit); i++) {
-      const uci = uciMoves[i];
-
-      const move = tempChess.move({
-        from: uci.slice(0, 2),
-
-        to: uci.slice(2, 4),
-
-        promotion: "q",
-      });
-
-      if (!move) continue;
-
-      if (move.color === "w") {
-        html += `${currentMoveNumber}. `;
-      } else if (i === 0 && startsWithBlack) {
-        html += `${currentMoveNumber}... `;
-      }
-
-      html += `
-
-            <span class="
-            engine-line-move"
-
-            data-index="${i}">
-
-                ${move.san}
-
-            </span>
-
-            `;
-
-      if (move.color === "b") {
-        currentMoveNumber++;
-      }
-    }
-
-    bestMoveText.innerHTML = html;
-
-    addEngineLineClickEvents();
-  }
-};
 
 // undo
 
@@ -923,19 +698,16 @@ const SAVED_ANALYSES_KEY = "cheeseSavedAnalyses";
 exportPgnBtn.addEventListener("click", saveCurrentAnalysis);
 
 
-// Training has no way to open the PGN-import ("Review") modal — its trigger
-// button (loadPgnBtn) doesn't exist in training/index.html, so
-// openReviewModal/closeReviewModal/parsePGN/applyPGNMetadata/importPGN and
-// their event wiring — unreachable leftovers from the Analysis-page
-// copy-paste — have been removed. The modal markup itself is left in
-// training/index.html untouched (out of scope for this cleanup).
+// Training has no PGN-import ("Review") modal. Its trigger button never
+// existed here, so the handlers were removed previously and the orphaned
+// modal markup has now been removed from training/index.html too.
 
 // (Analysis-only PGN/opening handoff intentionally omitted on Training.)
 
 // ── Training: dedicated Stockfish opponent ──────────────────────────────────
-// A SEPARATE engine worker. The analysis `engine` stays a no-op stub so its
-// dormant onmessage never touches the removed eval UI; this worker only asks
-// for a best move and plays it for Stockfish's colour.
+// The page's only engine. It is asked for a best move and plays it for
+// Stockfish's colour — Training shows no evaluation, so nothing here parses
+// score/depth output.
 
 let trEngine = null;
 

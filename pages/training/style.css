@@ -269,42 +269,6 @@ body{
     background: rgba(255,255,255,0.12);
 }
 
-.ap-tab-disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.ap-tab-disabled:hover {
-    opacity: 0.6;
-    color: rgba(255,255,255,0.65);
-}
-
-/* Coming soon tooltip on disabled tabs */
-.ap-tab-disabled::after {
-    content: attr(data-soon);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    background: rgba(20,26,45,0.97);
-    color: rgba(255,255,255,0.85);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 9px;
-    border-radius: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s, transform 0.15s;
-    border: 1px solid rgba(255,255,255,0.1);
-    z-index: 200;
-}
-
-.ap-tab-disabled:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
 /* AP SUB HEADER */
 
 .ap-sub-header {
@@ -985,43 +949,6 @@ body{
    AP ACTION BAR — disabled / danger states
    ===================== */
 
-.ap-action-btn-disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    position: relative;
-}
-
-.ap-action-btn-disabled:hover {
-    background: none;
-    color: rgba(255,255,255,0.55);
-}
-
-/* Coming Soon tooltip on disabled action buttons */
-.ap-action-btn-disabled::before {
-    content: attr(data-soon);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    background: rgba(20,26,45,0.97);
-    color: rgba(255,255,255,0.85);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 9px;
-    border-radius: 6px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s, transform 0.15s;
-    border: 1px solid rgba(255,255,255,0.10);
-    z-index: 300;
-}
-
-.ap-action-btn-disabled:hover::before {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
 .ap-action-btn-danger {
     color: rgba(255,120,120,0.75);
 }
@@ -1146,10 +1073,6 @@ body{
     overflow: hidden;
 }
 
-.ap-tabs .ap-tab:not(.ap-tab-disabled) {
-    cursor: pointer;
-}
-
 /* GAMES TAB — saved analyses */
 
 .ap-games-header {
@@ -1266,163 +1189,6 @@ body{
     line-height: 1.6;
 }
 
-
-/* =====================
-   REVIEW — IMPORT PGN MODAL
-   ===================== */
-
-.pgn-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(4,6,12,0.62);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    padding: 24px;
-    /* Centers the modal in the workspace to the right of the fixed left-nav
-       sidebar (--cheese-sidebar-w, assets/css/nav.css) rather than the full
-       viewport — same reasoning as .cheese-dialog-overlay in
-       assets/css/cheese-dialogs.css. The backdrop itself still covers the
-       whole viewport (inset:0 above is untouched). */
-    padding-left: calc(var(--cheese-sidebar-w, 220px) + 24px);
-}
-
-.pgn-modal {
-    width: 100%;
-    max-width: 460px;
-    /* .pgn-modal-overlay has padding:24px on every side, so this keeps the
-       modal from growing past the viewport on a short window — it shrinks
-       and scrolls internally instead of clipping off-screen. */
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
-    /* Lines this modal up with the board behind it, same as
-       .cheese-dialog — see --cheese-dialog-board-shift in
-       assets/css/board-layout.css. */
-    margin-right: var(--cheese-dialog-board-shift, 0px);
-    background: rgba(20, 20, 22, 0.82);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 16px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.55),
-                inset 0 1px 0 rgba(255,255,255,0.06);
-    padding: 20px 22px 22px 22px;
-    color: white;
-}
-
-.pgn-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-}
-
-.pgn-modal-title {
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-}
-
-.pgn-modal-close {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.5);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 8px;
-    display: flex;
-    transition: background 0.15s, color 0.15s;
-}
-
-.pgn-modal-close svg { width: 18px; height: 18px; }
-
-.pgn-modal-close:hover {
-    background: rgba(255,255,255,0.08);
-    color: white;
-}
-
-.pgn-modal-desc {
-    font-size: 13px;
-    color: rgba(255,255,255,0.55);
-    margin-bottom: 14px;
-    line-height: 1.5;
-}
-
-.pgn-modal-textarea {
-    width: 100%;
-    min-height: 140px;
-    resize: vertical;
-    padding: 12px 14px;
-    font-size: 13.5px;
-    font-family: "Courier New", monospace;
-    line-height: 1.6;
-    color: #fff;
-    background: rgba(10,10,11,0.85);
-    border: 1px solid rgba(255,255,255,0.14);
-    border-radius: 10px;
-    outline: none;
-    transition: border-color 0.16s, background 0.16s;
-}
-
-.pgn-modal-textarea::placeholder {
-    color: rgba(255,255,255,0.35);
-}
-
-.pgn-modal-textarea:focus {
-    border-color: rgba(255,255,255,0.3);
-    background: rgba(12,12,13,0.92);
-}
-
-.pgn-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 16px;
-}
-
-.pgn-modal-btn {
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: Arial, sans-serif;
-    border-radius: 9px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background 0.16s, border-color 0.16s, color 0.16s;
-}
-
-.pgn-modal-btn-ghost {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.75);
-}
-
-.pgn-modal-btn-ghost:hover {
-    background: rgba(255,255,255,0.1);
-    color: white;
-}
-
-.pgn-modal-btn-primary {
-    background: rgba(255,255,255,0.92);
-    color: #0b0f1a;
-}
-
-.pgn-modal-btn-primary:hover {
-    background: #fff;
-}
-
-/* =====================
-   TRAINING — engine UI hidden (no Stockfish yet)
-   ===================== */
-/* Training reuses the Analysis board but has no engine yet, so the engine-only
-   UI is hidden. The elements stay in the DOM so the reused board script keeps
-   working unchanged. */
-.eval-container { display: none !important; }
-.ap-sub-right { display: none !important; }
-.ap-engine-lines { display: none !important; }
 
 /* =====================
    TRAINING — bot selector, config, game panel, board flip

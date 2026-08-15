@@ -12,11 +12,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Disabled nav items never navigate.
-    document.querySelectorAll('.left-nav-disabled').forEach(item => {
-        item.addEventListener('click', e => e.preventDefault());
-    });
-
     // ── Player registry — extend this to add more players ──────────────────────
     const PLAYERS = [
         {
