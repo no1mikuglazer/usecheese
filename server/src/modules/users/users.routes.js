@@ -12,6 +12,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/requireAuth.js";
 import { validate } from "../../middleware/validate.js";
+import { userMutationRateLimiter } from "../../middleware/rateLimiter.js";
 import { asyncHandler } from "../../lib/asyncHandler.js";
 import {
   puzzleResultBodySchema,
@@ -27,6 +28,7 @@ usersRouter.get("/me", requireAuth, asyncHandler(controller.me));
 usersRouter.patch(
   "/me",
   requireAuth,
+  userMutationRateLimiter,
   validate(profileUpdateBodySchema, "body"),
   asyncHandler(controller.updateProfile),
 );
@@ -34,6 +36,7 @@ usersRouter.patch(
 usersRouter.post(
   "/me/puzzle-result",
   requireAuth,
+  userMutationRateLimiter,
   validate(puzzleResultBodySchema, "body"),
   asyncHandler(controller.submitPuzzleResult),
 );

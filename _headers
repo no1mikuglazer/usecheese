@@ -1,0 +1,19 @@
+# Cloudflare Pages reads this file to attach response headers to every
+# request for the frontend. The API (Railway) already gets a solid default
+# set from helmet() in server/src/app.js — this is the frontend's equivalent,
+# which had none at all before this file existed.
+#
+# Deliberately NOT a Content-Security-Policy: this site loads scripts from
+# multiple external origins (Clerk's CDN, cdnjs for chess.js) and runs a
+# WASM chess engine via a Web Worker (engine/), each of which needs its own
+# careful CSP allowance (script-src, worker-src, wasm-unsafe-eval, connect-src
+# for api.usecheese.xyz). Getting that wrong fails closed — a misconfigured
+# CSP can silently blank the whole app or break Stockfish/Clerk — so it needs
+# its own dedicated pass with real testing across every page, not a header
+# bolted on during an audit. The headers below carry no such risk: none of
+# them restrict what the page is allowed to load.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
