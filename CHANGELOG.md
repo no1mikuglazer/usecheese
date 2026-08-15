@@ -354,16 +354,138 @@ Completed: 03/08/2026
 - Configuration is entirely environment-variable driven; no secrets are
   committed (see `server/.env.example`)
 
+# V1.3.1 — Accounts, Profiles & Ratings
+
+Completed: 14/08/2026
+
+Cheese gained its first real user accounts. Every board feature still works
+signed-out; accounts add persistence on top rather than gating what already
+existed.
+
+## Added
+
+- **User accounts** via [Clerk](https://clerk.com) — dedicated Sign Up and Log In pages
+- **Persisted puzzle rating** for signed-in users, moving up or down with each solve
+- **Public profile page** (`pages/profile/`) — reachable at `?u=<username>`, showing
+  identity, puzzle stats, rating history, recent activity and a theme breakdown
+- Rating history chart with hover detail
+- Profile customization — a banner palette with live preview, and a favourite opening
+- Puzzle rating milestones, and an "almost unlocked" counter for puzzle themes
+- **Anonymous puzzle gate** — 5 free puzzles signed-out, with a first-visit intro
+  and a live remaining counter, then a prompt to sign up
+- Live signed-in / signed-out state in the nav, cached so it paints instantly
+  instead of flashing the wrong state on every page load
+- Per-attempt puzzle logging, groundwork for a future stats feature
+- `assets/js/clerk-client.js` — shared Clerk bootstrap for every page
+
+## Changed
+
+- Renamed `data/` to `library/`, to be clearly distinct from `server/data/`
+- Replaced Clerk's default avatar with a plain glass initial tile, matching the UI
+- Moved Clerk from its development instance to a production one
+
+## Removed
+
+- The puzzle-rating sparkline — it never read well at the size available
+
+## Fixed
+
+- **Signed-in users were getting 401 on every API request.** `usecheese.xyz` and
+  `api.usecheese.xyz` are separate origins, so the session cookie was never sent.
+  The session is now passed explicitly as an `Authorization: Bearer` token.
+- Clerk rejected valid cross-subdomain sessions until `authorizedParties` was set
+- **Every deploy silently wiped every account.** `USERS_DB_PATH` was never set in
+  production, so it fell back to a path inside the container's ephemeral
+  filesystem. Fixed by setting the variable and adding a production start-up check
+  that refuses to boot without it. Data lost before the fix is unrecoverable.
+- Oversized avatar and a signed-out nav flash when navigating between pages
+- Puzzle rating header — stuck placeholder, stray sparkline dot, layout issues
+
+## Technical Notes
+
+- Accounts live in **their own SQLite file**, separate from the puzzle database.
+  Both puzzle scripts drop and recreate their target as a routine operation; a
+  shared file would mean running an import out of habit destroyed every user.
+- The users database is not reproducible from anything and must be included in
+  any volume backup — unlike the puzzle database, which can always be rebuilt
+- Rating change is a pure function of the puzzle's own difficulty. The server
+  looks up that difficulty itself rather than trusting a value from the client.
+- `server/src/lib/profileOptions.js` is the single source of truth for the banner
+  and opening lists, read by both the API's validation and the frontend's pickers
+- Security hardening: `helmet` on the API, response headers on the frontend
+  (`_headers`), and stricter rate limits on the write endpoints
+
+# V1.4 — Final Polish
+
+Completed: 15/08/2026
+
+No new features. This release closes the gaps that made a finished site feel
+unfinished: what happens when something goes wrong, what happens when you click
+the wrong button, and making the source match what the site actually does.
+
+## Added
+
+- **404 page** — an unknown URL previously fell through to Cloudflare's default
+  handling and offered no way back into the site
+- **Offline state for Puzzles** — when the API is unreachable, the board is
+  replaced by an error card explaining the situation, with Try Again and a way home
+- `assets/css/error-state.css` — one shared treatment for both, so errors read as
+  part of Cheese rather than as unrelated screens
+
+## Improved
+
+- **Puzzles remembers your difficulty** and **Training remembers your colour**
+  across reloads. Both controls already existed; they simply reset every visit.
+- Confirmation before Analysis's **New** (skipped on an untouched board) and
+  before deleting a saved analysis, which names the analysis being deleted
+- The Puzzles page's in-`<head>` prefetch now requests the saved difficulty, so
+  it is actually usable instead of being discarded and re-fetched
+
+## Fixed
+
+- **A failed puzzle submit silently discarded the solve.** It was never scored,
+  the user was never told, and the puzzle could never be re-submitted. It now
+  reports the failure and stays scoreable.
+- Deleting a saved analysis re-rendered as though it had worked even when the
+  write failed — the entry would reappear on the next reload
+- The active nav item was an `<a>` placed directly inside `<ul>`, invalid markup
+  on four pages
+
+## Removed
+
+- The fake player clocks — a hardcoded `10:00` that never ticked
+- Training's dead UCI parser, which wrote to five DOM elements that do not exist
+  on that page, plus the no-op engine stub it was the only consumer of
+- An unreachable PGN-import modal on Training, with no trigger anywhere
+- Unused "Coming Soon" tooltip and disabled-state CSS matching no elements
+- Roughly 655 net lines in total
+
+## Technical Notes
+
+- `404.html` is picked up automatically by Cloudflare Pages. Its asset paths are
+  root-absolute because the file is served **at the requested URL** — a miss on
+  `/pages/analysis/foo` renders it with the base still at `/pages/analysis/`,
+  where relative paths would 404 in turn and leave it unstyled.
+- Only an unreachable server takes over the Puzzles board. A rating range with no
+  puzzles in it stays in the sidebar, because the server answered fine and
+  widening the range fixes it — removing the board would hide the controls needed.
+- `latestEngineUCILine` was kept in Training despite appearing dead: `board-core.js`
+  reads it in `createEngineContinuation` and writes it in `resetAnalysisState`,
+  which Training calls on every new game
+- The duplicated `.left-nav-auth` block in `style.css` was also kept — the Home
+  page does not load `nav.css`, so that copy is required, not leftover
+
 ### Upcoming
 
 Future updates are planned to include:
 
-- User accounts and cloud-synced progress
-- Puzzle themes and motif filtering
-- Mobile support
-- Additional master games
-- More training options
-- General improvements and polish
+- **Mobile support** — a fully responsive experience for phones and tablets
+- **Cloud-synced saved analyses** — they still live only in browser `localStorage`
+- **Puzzle themes** — filter training by tactical motif
+- **Accessibility** — keyboard-navigable board, screen-reader support, and
+  `prefers-reduced-motion` on the animated pages
+- **Link previews** — Open Graph tags so a shared link renders a card
+- Additional master games, more training options, and ongoing polish
 
 
 
