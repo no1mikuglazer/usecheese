@@ -4,6 +4,14 @@
 
 **Live at [usecheese.xyz](https://usecheese.xyz)**
 
+> ### 🧀 This project is complete
+>
+> Cheese is **finished**. **v1.4.1** is the final release and active development
+> has ended — no further features are planned. The site is live and fully
+> functional; what is described below is the finished product, not a work in
+> progress. See [Scope](#scope--what-cheese-does-not-do) for the boundary of
+> what it does, and the [changelog](docs/CHANGELOG.md) for how it got here.
+
 ---
 
 ## Overview
@@ -12,13 +20,13 @@
 
 Every board feature — analysis, openings, the database, playing Stockfish — runs entirely in your browser, with no account needed. The Puzzles page additionally talks to the Cheese API, a small backend that serves positions from a database of 1.7 million tactics puzzles, sampled across every difficulty from the full 5.8 million–puzzle Lichess import (see [`server/`](server/)). Puzzles are free to try without an account — 5 puzzles, then a prompt to sign up. A free account (via [Clerk](https://clerk.com)) removes that limit and adds a persisted puzzle rating that goes up or down with each solve, plus a public profile showing your rating history, recent activity and the tactical themes you have met.
 
-Cheese is **desktop-only** today. Below 768px every page shows an explanatory notice rather than a broken layout; a responsive experience is the next major piece of work.
+Cheese is **desktop-only**. Below 768px every page shows an explanatory notice rather than a broken layout. This is by design and will not change — see [Scope](#scope--what-cheese-does-not-do).
 
 ---
 
 ## Features
 
-Everything below is available in **Version 1.4**.
+Everything below is live in **Version 1.4.1**, the final release.
 
 | Feature | Description |
 | --- | --- |
@@ -63,20 +71,26 @@ Cloudflare Pages; the API runs on Railway (see
 
 ---
 
-## Upcoming Features
+## Scope — what Cheese does *not* do
 
-These are planned for future releases:
+Development is complete, so these are permanent limitations rather than pending
+work. They were considered during development and deliberately not built:
 
-- **Mobile Support** — a fully responsive experience for phones and tablets.
-  Cheese is desktop-only today and shows an explanatory notice below 768px.
-- **Cloud-synced saved analyses** — accounts exist (see Accounts & Profiles above),
-  but saved analyses still live only in your browser's `localStorage`
-- **Puzzle themes** — filter training by tactical motif
-- **Accessibility** — a keyboard-navigable board, screen-reader support, and
-  respecting `prefers-reduced-motion`
-- **Link previews** — Open Graph tags so a shared Cheese link renders a preview card
-- **More master games** — additional players and expanded collections
-- **Additional improvements** — ongoing polish and quality-of-life updates
+- **Mobile** — Cheese is desktop-only and shows an explanatory notice below
+  768px. This is the single largest thing it does not do.
+- **Cloud-synced saved analyses** — accounts exist (see Accounts & Profiles
+  above), but saved analyses live only in your browser's `localStorage`, so they
+  do not follow you across devices
+- **Puzzle themes as a filter** — themes are revealed when you finish a puzzle,
+  but you cannot train a specific motif
+- **Accessibility** — the board is not keyboard-navigable, there is no
+  screen-reader support, and animated pages do not respect
+  `prefers-reduced-motion`
+- **Link previews** — no Open Graph tags, so a shared Cheese link renders no
+  preview card
+
+Cheese is [GPL-3.0](#license) — if you want any of the above, you are free to
+fork it and build them.
 
 ---
 
@@ -124,7 +138,12 @@ Cheese is built to be a **calm, distraction-free environment for studying chess*
 
 ## Version
 
-This README corresponds to **Version 1.4**.
+This README corresponds to **Version 1.4.1** — the **final** release.
+
+Cheese was built between May and August 2026, from a single analysis board
+([v1.0](docs/CHANGELOG.md)) to a nine-page study platform with its own backend,
+puzzle database and account system. The full history is in the
+[changelog](docs/CHANGELOG.md).
 
 ---
 
@@ -140,4 +159,8 @@ You are free to use, study, share, and modify Cheese under the terms of the GPL-
 
 ## Thank You
 
-Thanks for checking out **Cheese**! Your interest and feedback are genuinely appreciated. Enjoy your study, and happy analysing.
+Thanks for checking out **Cheese**! It started as a chessboard that could barely
+track a move and ended as a platform I'm genuinely proud of. It's finished now —
+the site stays live, and it is what it was always meant to be.
+
+Enjoy your study, and happy analysing. ♟️🧀

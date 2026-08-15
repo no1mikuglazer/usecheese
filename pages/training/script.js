@@ -17,8 +17,6 @@ const moveTreeContainer = document.getElementById("moveTree");
 
 const newGameBtn = document.getElementById("newGameBtn");
 
-const deleteGameBtn = document.getElementById("deleteGameBtn");
-
 const exportPgnBtn = document.getElementById("exportPgnBtn");
 
 const undoMoveBtn = document.getElementById("undoMoveBtn");

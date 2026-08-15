@@ -472,20 +472,79 @@ the wrong button, and making the source match what the site actually does.
 - `latestEngineUCILine` was kept in Training despite appearing dead: `board-core.js`
   reads it in `createEngineContinuation` and writes it in `resetAnalysisState`,
   which Training calls on every new game
-- The duplicated `.left-nav-auth` block in `style.css` was also kept — the Home
-  page does not load `nav.css`, so that copy is required, not leftover
+- The duplicated `.left-nav-auth` block in the Home stylesheet was also kept —
+  the Home page does not load `nav.css`, so that copy is required, not leftover.
+  (That file was `style.css` at the root at the time; it is now
+  `assets/css/home.css` — see v1.4.1 below.)
 
-### Upcoming
+# V1.4.1 — Root Cleanup & Final Bug Check
 
-Future updates are planned to include:
+Completed: 15/08/2026
 
-- **Mobile support** — a fully responsive experience for phones and tablets
-- **Cloud-synced saved analyses** — they still live only in browser `localStorage`
-- **Puzzle themes** — filter training by tactical motif
-- **Accessibility** — keyboard-navigable board, screen-reader support, and
-  `prefers-reduced-motion` on the animated pages
-- **Link previews** — Open Graph tags so a shared link renders a card
-- Additional master games, more training options, and ongoing polish
+The last change made to Cheese. A tidy-up of the repository root, and a final
+pass over the whole codebase to confirm nothing was left broken.
+
+## Changed
+
+- Moved the last loose files out of the repository root into folders:
+  `style.css` → `assets/css/home.css`, `script.js` → `assets/js/home.js`,
+  `mobile-gate.css` → `assets/css/mobile-gate.css`, and `CHANGELOG.md` → `docs/`
+- Only six files remain at the root, and each has to be there: `index.html` and
+  `404.html` are served from it, `_headers` is only read from it, and
+  `README.md`, `LICENSE` and `.gitignore` are expected there by GitHub and git
+
+## Fixed
+
+- **The Home page lost its background** in the move. A `url()` in a stylesheet
+  resolves against the stylesheet's own location, not the page that loads it,
+  so `assets/backgrounds/custom_bg1.png` had to become `../backgrounds/...`
+  once the file moved into `assets/css/`.
+
+## Final Bug Check
+
+A full static sweep of the site before closing development:
+
+- All 224 local `href` / `src` / `url()` references across every HTML and CSS
+  file resolve to a file that exists — no other casualties of the move
+- Every path built in JavaScript (piece images, sounds, the Stockfish worker,
+  the ECO JSON, the master PGNs, the profile link) resolves
+- Every `.js` file, frontend and server, parses clean
+- Shared stylesheet and script includes are consistent across all nine pages,
+  and the mobile gate markup is present on every one of them plus the 404 page
+- Every `getElementById` / `#querySelector` target either exists in its page or
+  is properly null-guarded
+
+Two cosmetic issues were found and fixed: a dead `deleteGameBtn` lookup left in
+Training after its Delete button was removed in v1.4, and a stale reference to
+the pre-move `style.css` in this changelog. **No functional bugs were found.**
+
+---
+
+# Project Status: Complete
+
+Cheese is **finished**. V1.4.1 is the final release, and development has ended.
+
+What shipped is a complete desktop chess study platform: engine analysis,
+opening exploration, a master game database, play against Stockfish, a 1.7
+million–puzzle tactics trainer, user accounts with persisted ratings and public
+profiles, and local saved analyses — across nine pages, a static frontend and a
+Node/SQLite API, with no build step.
+
+### Considered but not built
+
+These were on the roadmap during development and were never started. They are
+recorded here as the honest boundary of what Cheese does, not as pending work:
+
+- **Mobile support** — Cheese is desktop-only and shows an explanatory notice
+  below 768px. This is the single largest thing it does not do.
+- **Cloud-synced saved analyses** — saved analyses live only in the browser's
+  `localStorage`, so they do not follow an account across devices
+- **Puzzle themes** — puzzle themes are revealed on completion, but training
+  cannot be filtered by motif
+- **Accessibility** — the board is not keyboard-navigable, there is no
+  screen-reader support, and the animated pages ignore `prefers-reduced-motion`
+- **Link previews** — no Open Graph tags, so a shared link renders no card
+- Additional master games and further training options
 
 
 
