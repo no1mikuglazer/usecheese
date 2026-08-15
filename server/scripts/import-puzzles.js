@@ -58,7 +58,7 @@ const DEFAULT_PARQUET = path.resolve(
   serverRoot,
   "..",
   "..",
-  "Chess_Engine_Web_data",
+  "usecheese_data",
   "chess-puzzles.parquet",
 );
 

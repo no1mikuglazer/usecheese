@@ -6,7 +6,7 @@ both of which still describe v1.2.**
 This is a plain-language summary of everything that changed between **v1.2**
 (the first public release, 01/07/2026) and **v1.4** (15/08/2026). Copy from it
 freely — it is written to be pasted into slides and a report, not read as a
-changelog. For the precise per-release detail, see [`CHANGELOG.md`](../../CHANGELOG.md).
+changelog. For the precise per-release detail, see [`CHANGELOG.md`](../CHANGELOG.md).
 
 ---
 

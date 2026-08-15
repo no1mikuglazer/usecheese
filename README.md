@@ -43,10 +43,18 @@ Everything below is available in **Version 1.4**.
 | Path | Contents |
 | --- | --- |
 | `index.html`, `pages/` | The static website — one folder per page |
+| `404.html` | Shown for any unknown URL (picked up automatically by Cloudflare Pages) |
 | `assets/` | Shared CSS, JS, pieces, sounds and images |
 | `engine/` | Stockfish 18 (WebAssembly) |
 | `library/` | Static content: ECO openings, master game PGNs |
+| `docs/` | Changelog and technical documentation artifacts |
 | `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
+| `_headers` | Response headers applied by Cloudflare Pages |
+
+Only six files sit at the repository root, and each has to: `index.html` and
+`404.html` are served from there, `_headers` is only read from there, and
+`README.md`, `LICENSE` and `.gitignore` are expected there by GitHub and git.
+Everything else lives in a folder.
 
 The website and the API deploy independently. Only the Puzzles page depends on
 the API; every other page works without it. The website is hosted on

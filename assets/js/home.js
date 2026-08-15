@@ -1,5 +1,5 @@
 /* =====================
-   Home — script.js
+   Home — assets/js/home.js
    =====================
    The Home page is intentionally lightweight.
    This file exists as the Home page's own script entry point

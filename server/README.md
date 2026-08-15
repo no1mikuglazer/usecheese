@@ -24,8 +24,8 @@ It is kept **outside this repository**, in a sibling folder:
 
 ```
 Projects/
-  Chess_Engine_Web/          <- this repository
-  Chess_Engine_Web_data/
+  usecheese/          <- this repository
+  usecheese_data/
     chess-puzzles.parquet    <- source data
 ```
 
@@ -55,7 +55,7 @@ Options:
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `--parquet <path>` | `../../Chess_Engine_Web_data/chess-puzzles.parquet` | Source file |
+| `--parquet <path>` | `../../usecheese_data/chess-puzzles.parquet` | Source file |
 | `--db <path>` | `./data/cheese.sqlite` | Output database |
 | `--min-popularity <n>` | `50` | Drop puzzles below this community score |
 | `--min-plays <n>` | `5` | Drop puzzles played fewer than this many times |
