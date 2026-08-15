@@ -45,8 +45,32 @@
             ? "http://localhost:3001/api"
             : "https://api.usecheese.xyz/api";
 
+        /* The solver's saved difficulty, read here so the prefetch asks for
+           the range the page is actually about to show. Without this, anyone
+           who had ever changed difficulty would prefetch 1400-1800, have
+           loadNewPuzzle() correctly reject it as out of range, and pay for a
+           second request anyway — turning the optimization above into pure
+           waste for exactly the people who use the page most.
+
+           Kept in sync with PUZZLE_RANGE_KEY and readRatingRange() in
+           pages/puzzles/script.js, which applies the same value to the inputs
+           below (with the same clamping) before the first load. */
         var min = 1400;
         var max = 1800;
+
+        try {
+          var saved = JSON.parse(localStorage.getItem("cheesePuzzleRange"));
+          if (saved && isFinite(saved.min) && isFinite(saved.max)) {
+            var lo = Math.min(Math.max(saved.min, 0), 3500);
+            var hi = Math.min(Math.max(saved.max, 0), 3500);
+            if (lo > hi) { var swap = lo; lo = hi; hi = swap; }
+            min = lo;
+            max = hi;
+          }
+        } catch (e) {
+          /* unreadable, unavailable, or corrupt storage — keep the defaults,
+             which still match the inputs' own initial values below. */
+        }
 
         var promise = fetch(
           window.CHEESE_API_BASE +

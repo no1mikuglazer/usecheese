@@ -1128,6 +1128,32 @@ function trResetPlayers() {
 
   let chosenColor = null; // "white" | "black" | null
 
+  // The colour picker already exists and already has its UI — it just forgot
+  // between visits, so every session silently restarted as White unless the
+  // solver re-picked Black each time. Persisting the last choice changes
+  // nothing on screen: the same two buttons simply open on the one last used.
+  const TRAINING_COLOR_KEY = "cheeseTrainingColor";
+
+  function readSavedColor() {
+    try {
+      const raw = localStorage.getItem(TRAINING_COLOR_KEY);
+      // Anything else (absent, corrupted, hand-edited) falls through to null
+      // and the picker opens unselected, exactly as it does today.
+      return raw === "white" || raw === "black" ? raw : null;
+    } catch (e) {
+      return null; // storage unavailable → today's behaviour
+    }
+  }
+
+  function writeSavedColor(color) {
+    try {
+      localStorage.setItem(TRAINING_COLOR_KEY, color);
+    } catch (e) {
+      // Same posture as the rest of the app's storage writes: failing to
+      // persist is acceptable, the choice still applies for this session.
+    }
+  }
+
   function applyOrientation(color) {
     boardFlipped = color === "black";
     if (boardArea) boardArea.classList.toggle("flipped", boardFlipped);
@@ -1139,9 +1165,17 @@ function trResetPlayers() {
     selectView.hidden = false;
     config.hidden = true;
     botCard.classList.remove("is-active");
-    chosenColor = null;
-    colWhite.classList.remove("is-selected");
-    colBlack.classList.remove("is-selected");
+
+    // Reopen on the last colour played rather than blank. Falls back to the
+    // original cleared state when there is nothing saved.
+    const saved = readSavedColor();
+    if (saved) {
+      selectColor(saved);
+    } else {
+      chosenColor = null;
+      colWhite.classList.remove("is-selected");
+      colBlack.classList.remove("is-selected");
+    }
   }
 
   function showGame() {
@@ -1161,6 +1195,7 @@ function trResetPlayers() {
     chosenColor = c;
     colWhite.classList.toggle("is-selected", c === "white");
     colBlack.classList.toggle("is-selected", c === "black");
+    writeSavedColor(c);
   }
   colWhite.addEventListener("click", () => selectColor("white"));
   colBlack.addEventListener("click", () => selectColor("black"));

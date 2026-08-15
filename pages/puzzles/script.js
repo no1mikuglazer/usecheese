@@ -888,6 +888,58 @@ function readRatingRange() {
   return { min, max };
 }
 
+// ── Difficulty persistence ──────────────────────────────────────────────────
+// The difficulty controls already exist; they just reset to Medium on every
+// reload, so anyone working through Hard or Expert had to re-pick on each
+// visit. Nothing new is added to the page — the same six buttons and two
+// inputs simply come back the way they were left.
+//
+// Only the two numbers are stored. Which preset is highlighted is derived from
+// them, so the button and the inputs cannot drift out of agreement.
+//
+// IMPORTANT: the in-<head> prefetch in pages/puzzles/index.html reads this same
+// key, with the same clamping, so its request matches the range applied here.
+// Changing the key or the clamping means changing it there too.
+const PUZZLE_RANGE_KEY = "cheesePuzzleRange";
+
+function saveRatingRange(min, max) {
+  try {
+    localStorage.setItem(PUZZLE_RANGE_KEY, JSON.stringify({ min, max }));
+  } catch (e) {
+    // Same posture as the anon counter above: failing to persist is
+    // acceptable, the range still applies for this session.
+  }
+}
+
+// Highlight whichever preset matches the range exactly. A custom range matches
+// none and clears them all — the rule the change handler already applied by
+// hand, now derived in one place so a restored range highlights correctly too.
+function syncPresetToRange(min, max) {
+  presetsEl.querySelectorAll(".pz-preset").forEach((b) => {
+    b.classList.toggle(
+      "pz-preset-active",
+      Number(b.dataset.min) === min && Number(b.dataset.max) === max,
+    );
+  });
+}
+
+function applySavedRatingRange() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(PUZZLE_RANGE_KEY));
+  } catch (e) {
+    return; // unreadable, unavailable, or corrupt → the HTML defaults stand
+  }
+  if (!saved || !Number.isFinite(saved.min) || !Number.isFinite(saved.max)) return;
+
+  minRatingInput.value = String(saved.min);
+  maxRatingInput.value = String(saved.max);
+  // Re-run the normal path so a hand-edited value is clamped and swapped by
+  // exactly the same rules as typed input, never trusted straight from storage.
+  const { min, max } = readRatingRange();
+  syncPresetToRange(min, max);
+}
+
 function setupPuzzle(puzzle) {
   cancelPendingSteps();
   clearPuzzleMarks();
@@ -1349,6 +1401,8 @@ presetsEl.addEventListener("click", (e) => {
 
   minRatingInput.value = btn.dataset.min;
   maxRatingInput.value = btn.dataset.max;
+  const range = readRatingRange();
+  saveRatingRange(range.min, range.max);
   loadNewPuzzle();
 });
 
@@ -1374,14 +1428,21 @@ offlineRetryBtn.addEventListener("click", async () => {
 // describe what is in the inputs.
 [minRatingInput, maxRatingInput].forEach((input) => {
   input.addEventListener("change", () => {
-    readRatingRange();
-    presetsEl
-      .querySelectorAll(".pz-preset")
-      .forEach((b) => b.classList.remove("pz-preset-active"));
+    const { min, max } = readRatingRange();
+    // Derived rather than blanket-cleared: a custom range still matches no
+    // preset and clears them all, but typing a range that happens to equal a
+    // preset now highlights it instead of leaving the row misleadingly empty.
+    syncPresetToRange(min, max);
+    saveRatingRange(min, max);
   });
 });
 
 // ── Boot ────────────────────────────────────────────────────────────────────
+
+// Before the first loadNewPuzzle() below, so the opening request uses the
+// solver's own difficulty — and matches what the <head> prefetch already
+// asked for, letting that prefetch actually be used.
+applySavedRatingRange();
 
 updateSessionDisplay();
 
