@@ -7,12 +7,26 @@
    refreshUI()) into these functions, so this file must already be
    parsed and its functions defined by the time the page script runs.
 
-   Deliberately NOT here (stay page-local, possibly duplicated):
-   playMove (training monkey-patches it after definition), GameNode,
-   updateEvalBar, analyzePosition, renderBoard, refreshUI, the engine
-   Worker/stub init, getDragTargetSquare/startDrag/showPromotionPicker
-   (real board-flip differences in Training), and the square-click
-   listener (turn-enforcement differs in Training). */
+   Board orientation lives here too: `boardFlipped` is declared in this file
+   and only ASSIGNED by Training and Puzzles. Every flip-aware branch below
+   reads it, so Analysis — which never flips — gets the correct behaviour by
+   leaving it false. Same for `dragState` and `pendingPromotion`. A page must
+   not redeclare any of the three: `let` at the top level of a classic script
+   binds in the shared global lexical scope, so a second declaration is a
+   SyntaxError rather than a shadow.
+
+   Deliberately NOT here (stay page-local):
+   playMove (Training monkey-patches it after definition), GameNode,
+   updateEvalBar, analyzePosition, refreshUI, the engine Worker/stub init,
+   `selectedSquare` and the square-click listener that owns it (turn
+   enforcement differs per page).
+
+   Two escape hatches for per-page differences, both optional:
+   - `canStartDrag(square)` — a page defines it to refuse a drag (Training
+     and Puzzles do; Analysis allows every legal drag). See dragAllowed().
+   - renderBoard — Puzzles declares its own, which replaces this one for all
+     callers because page scripts load later. That fork is intentional and
+     documented at both ends. */
 
 // piece image
 
@@ -870,4 +884,323 @@ async function saveCurrentAnalysis() {
   });
 
   if (writeSavedAnalyses(list)) showToast('Saved "' + name + '"');
+}
+
+// ── Board orientation ───────────────────────────────────────────────────────
+// Declared HERE, not per-page, and deliberately so: `let` at the top level of
+// a classic script binds in the shared global lexical scope, so a second
+// `let boardFlipped` in a page script would be a hard SyntaxError, not a
+// shadow. Training and Puzzles ASSIGN to this when the player is Black;
+// Analysis never flips and simply leaves it false, which turns every
+// flip-aware branch below into a no-op there.
+let boardFlipped = false;
+
+// ── Drag / promotion state ──────────────────────────────────────────────────
+// Both are read and written only by the shared code below, so they live here
+// rather than being redeclared by every page — the same `let`-in-global-scope
+// rule as boardFlipped applies, so a page must NOT declare these itself.
+// (`selectedSquare` stays page-local by contrast: the click-to-move handlers
+// that own it are still page-specific.)
+let dragState = null;
+let pendingPromotion = null;
+
+// ── Drag gating hook ────────────────────────────────────────────────────────
+// The three board pages agree on how a drag *starts* but not on when one is
+// allowed: Analysis permits any legal move, Training requires an active game
+// on the human's turn at the tip of the line, Puzzles requires the solver's
+// turn on the live position. That difference — and only that difference — is
+// what used to justify three copies of startDrag.
+//
+// A page may define a top-level `canStartDrag(square)` returning false to
+// refuse the drag; it owns any toast explaining why. Pages that define
+// nothing (Analysis) allow every drag. Same optional-global pattern as
+// `boardAnnotations` in resetAnalysisState().
+function dragAllowed(square) {
+  if (typeof canStartDrag === "undefined") return true;
+  return canStartDrag(square);
+}
+
+// ── Square hit-testing ──────────────────────────────────────────────────────
+// Resolves a viewport point to a square id. The board keeps its 64 squares in
+// fixed a8..h1 DOM order and rotates the whole element when flipped (see
+// board-annotations.js's header), so a flipped board needs the row/col pair
+// point-reflected rather than the DOM re-read.
+function getDragTargetSquare(clientX, clientY) {
+  const boardEl = document.querySelector(".board");
+  const boardRect = boardEl.getBoundingClientRect();
+  const squareSize = boardRect.width / 8;
+  const col = Math.floor((clientX - boardRect.left) / squareSize);
+  const row = Math.floor((clientY - boardRect.top) / squareSize);
+  if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  if (boardFlipped) return files[7 - col] + (row + 1);
+  return files[col] + (8 - row);
+}
+
+// ── Promotion picker ────────────────────────────────────────────────────────
+// Positioned in VIEWPORT coordinates and attached to <body>, not to the board.
+// Attaching it to the board would inherit the board's 180deg rotation when
+// flipped and render the picker upside-down. Body-anchored + `position:fixed`
+// is orientation-independent, so this one implementation is correct for all
+// three pages (Analysis simply never flips).
+function showPromotionPicker(from, to) {
+  pendingPromotion = { from, to };
+  chess.load(currentNode.fen);
+  const piece = chess.get(from);
+  const isWhite = piece.color === "w";
+  const pieces = ["q", "r", "b", "n"];
+  const orderedPieces = isWhite ? pieces : [...pieces].reverse();
+  const toSquareEl = document.getElementById(to);
+  const squareRect = toSquareEl.getBoundingClientRect();
+  const squareSize = squareRect.width;
+
+  const popup = document.createElement("div");
+  popup.id = "promotion-popup";
+  popup.className = "promotion-popup";
+
+  orderedPieces.forEach((p) => {
+    const btn = document.createElement("div");
+    btn.className = "promotion-piece";
+    const img = document.createElement("img");
+    img.src = getPieceImage(isWhite ? "w" : "b", p);
+    img.className = "piece";
+    img.style.width = "80%";
+    img.style.height = "80%";
+    btn.appendChild(img);
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Captured before closePromotionPicker so the move still has its
+      // squares if anything clears pendingPromotion on the way out.
+      const promo = pendingPromotion;
+      closePromotionPicker();
+      pendingPromotion = null;
+      if (promo) playMove({ from: promo.from, to: promo.to, promotion: p });
+    });
+    popup.appendChild(btn);
+  });
+
+  popup.style.position = "fixed";
+  let pxTop = squareRect.top;
+  if (pxTop + squareSize * 4 > window.innerHeight) {
+    pxTop = squareRect.bottom - squareSize * 4;
+  }
+  popup.style.left =
+    Math.max(8, Math.min(squareRect.left, window.innerWidth - squareSize - 8)) + "px";
+  popup.style.top = Math.max(8, pxTop) + "px";
+  popup.style.width = squareSize + "px";
+  document.body.appendChild(popup);
+
+  // Deferred a tick so the click that opened the picker doesn't immediately
+  // close it via the outside-click listener.
+  setTimeout(() => document.addEventListener("click", outsidePromotionClick), 0);
+}
+
+// ── Drag start ──────────────────────────────────────────────────────────────
+function startDrag(e, square) {
+  const pieceEl = square.querySelector(".piece");
+  if (!pieceEl) return;
+
+  // Loaded BEFORE the gate, not after: Training's condition is expressed in
+  // terms of chess.turn(), so the hook has to see the current position.
+  chess.load(currentNode.fen);
+  if (!dragAllowed(square)) return;
+
+  const pieceColor = pieceEl.src.includes("/w_") ? "w" : "b";
+  if (pieceColor !== chess.turn()) return;
+
+  e.preventDefault();
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const boardEl = document.querySelector(".board");
+  const squareSize = boardEl.getBoundingClientRect().width / 8;
+
+  const ghost = document.createElement("img");
+  ghost.src = pieceEl.src;
+  ghost.className = "piece drag-ghost";
+  ghost.style.cssText = `
+    position:fixed;pointer-events:none;z-index:1000;
+    left:0;top:0;
+    width:${squareSize}px;height:${squareSize}px;
+    will-change:transform;
+  `;
+  setGhostTransform(ghost, clientX, clientY, DRAG_GHOST_SCALE);
+  document.body.appendChild(ghost);
+
+  pieceEl.style.opacity = "0.25";
+  square.style.outline = "3px solid rgba(255,255,255,0.4)";
+  showValidMoves(square.id);
+
+  if (selectedSquare && selectedSquare !== square) {
+    selectedSquare.style.outline = "none";
+    selectedSquare = null;
+  }
+
+  dragState = {
+    pieceEl,
+    ghost,
+    fromSquare: square,
+    fromRect: square.getBoundingClientRect(),
+  };
+}
+
+// Wires the board's own pointer listeners. Call once from a page script,
+// after the board element exists. `mousedown` ignores every button but the
+// left one so a right-mousedown starting an annotation arrow cannot also
+// start a piece drag underneath it.
+function attachBoardDragListeners() {
+  const boardElForDrag = document.querySelector(".board");
+  if (!boardElForDrag) return;
+
+  boardElForDrag.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    const square = e.target.closest(".square");
+    if (square) startDrag(e, square);
+  });
+
+  boardElForDrag.addEventListener(
+    "touchstart",
+    (e) => {
+      const square = e.target.closest(".square");
+      if (square) startDrag(e, square);
+    },
+    { passive: false },
+  );
+
+  document.addEventListener("mousemove", onDragMove, { passive: true });
+  document.addEventListener("touchmove", onDragMove, { passive: true });
+  document.addEventListener("mouseup", onDragEnd);
+  document.addEventListener("touchend", onDragEnd);
+}
+
+// ── Board render + move animation ───────────────────────────────────────────
+// Paints the position for `currentNode`, then animates the move that produced
+// it: a motion trail always, plus a capture fade and a gliding piece clone
+// unless suppressed.
+//
+// Used as-is by Analysis and Training. PUZZLES DELIBERATELY OVERRIDES THIS —
+// its own `function renderBoard` is declared later (page scripts load after
+// this file), which replaces the binding for every caller. That version is a
+// genuine fork, not a stale copy: it takes an explicit `node`, reuses a
+// decoded-image cache, clears clones still in flight when a puzzle changes,
+// counter-rotates its clones so glides work on a flipped board, and routes
+// its timers through the page's cancellable scheduleStep so a scripted
+// opponent reply can be aborted mid-puzzle. Folding all of that in here
+// would drag puzzle lifecycle state into shared code, so it stays forked.
+//
+// `suppressGlide` is true when a drag already put the piece where it belongs
+// — re-animating it would replay a movement the user just performed.
+function renderBoard(suppressGlide) {
+  const boardEl = document.querySelector(".board");
+  const before = snapshotBoard();
+
+  chess.load(currentNode.fen);
+  clearBoard();
+
+  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
+  chess.board().forEach((row, rowIndex) => {
+    row.forEach((piece, colIndex) => {
+      if (!piece) return;
+      const square = document.getElementById(files[colIndex] + (8 - rowIndex));
+      const img = document.createElement("img");
+      img.classList.add("piece");
+      img.src = getPieceImage(piece.color, piece.type);
+      square.appendChild(img);
+    });
+  });
+
+  // Runs on every render, so it updates after each move and when navigating
+  // forward/backward through move history and variations.
+  applyLastMoveHighlight();
+  if (chess.in_check()) {
+    flashCheck(findKingSquare(chess, chess.turn()));
+  }
+
+  if (!currentNode.move) return;
+
+  const move = currentNode.move;
+  const fromData = before[move.from];
+  if (!fromData) return;
+
+  const toSquareEl = document.getElementById(move.to);
+  if (!toSquareEl) return;
+
+  const boardRect = boardEl.getBoundingClientRect();
+  const toRect = toSquareEl.getBoundingClientRect();
+
+  // Drawn ahead of the glide's own conditions below, so it also appears for a
+  // dragged piece and on a flipped board. Unlike the piece clone, a symmetric
+  // gradient has no orientation, so it simply rotates with the board (it is
+  // told about the flip so its anchor can be converted into the board's own,
+  // rotated coordinate space).
+  drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, boardFlipped);
+
+  // When the board is flipped the glide clones would render mirrored and
+  // un-rotated, causing a per-move orientation flicker, so skip them. (On
+  // Analysis boardFlipped is always false, so only suppressGlide applies.)
+  if (suppressGlide || boardFlipped) return;
+
+  // Fade out any captured piece
+  if (before[move.to]) {
+    const cap = document.createElement("img");
+    cap.src = before[move.to].src;
+    cap.className = "piece anim-capture";
+    // The transition is declared up front and the value changed two frames
+    // later. Setting both together lets the browser collapse them into one
+    // style resolution, in which case no transition runs — and the element,
+    // whose removal was hooked to transitionend, then lingers invisibly at
+    // opacity 0 and inflates the board's piece count.
+    cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
+      width:${before[move.to].rect.width}px;height:${before[move.to].rect.height}px;
+      left:${before[move.to].rect.left - boardRect.left}px;
+      top:${before[move.to].rect.top - boardRect.top}px;
+      transition:opacity 150ms ease;opacity:1;`;
+    boardEl.appendChild(cap);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        cap.style.opacity = "0";
+      });
+    });
+
+    // Removal is scheduled rather than left to transitionend alone, so a
+    // transition that never fires cannot strand the element.
+    setTimeout(() => cap.remove(), 400);
+  }
+
+  // Glide the piece
+  const toEl = toSquareEl.querySelector(".piece");
+  if (toEl) toEl.style.opacity = "0";
+
+  const fly = document.createElement("img");
+  fly.src = fromData.src;
+  fly.className = "piece anim-fly";
+  const sl = fromData.rect.left - boardRect.left;
+  const st = fromData.rect.top - boardRect.top;
+  const el = toRect.left - boardRect.left;
+  const et = toRect.top - boardRect.top;
+  fly.style.cssText = `position:absolute;pointer-events:none;z-index:20;
+    width:${fromData.rect.width}px;height:${fromData.rect.height}px;
+    left:${sl}px;top:${st}px;will-change:transform;
+    transition:transform 200ms cubic-bezier(0.25,0.1,0.25,1);transform:translate(0,0);`;
+  boardEl.appendChild(fly);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fly.style.transform = `translate(${el - sl}px,${et - st}px)`;
+    });
+  });
+
+  // The destination piece is hidden while the clone flies over it, so this
+  // must run even if the transition never fires — otherwise that piece would
+  // stay invisible until the next render. Scheduled as well as hooked to
+  // transitionend, and written to be safe to run twice.
+  const finishGlide = () => {
+    fly.remove();
+    if (toEl) toEl.style.opacity = "1";
+  };
+
+  fly.addEventListener("transitionend", finishGlide, { once: true });
+  setTimeout(finishGlide, 450);
 }

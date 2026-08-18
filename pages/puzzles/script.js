@@ -27,8 +27,7 @@ const boardAnnotations = attachBoardAnnotations(document.querySelector(".board")
 let currentNode = { fen: chess.fen(), move: null };
 
 let selectedSquare = null;
-let dragState = null;
-let pendingPromotion = null;
+// dragState, pendingPromotion — declared in assets/js/board-core.js
 
 const MOVE_SOUND_FILES = {
   move: "../../assets/sounds/move-self.mp3",
@@ -115,7 +114,8 @@ let awaitingOpponent = false; // true while a scripted reply is being played
 let usedHint = false;
 let failedThisPuzzle = false;
 let hintLevel = 0; // 0 = none, 1 = piece shown, 2 = full move shown
-let boardFlipped = false;
+// boardFlipped is declared in assets/js/board-core.js (a second `let` here
+// would be a SyntaxError, not a shadow) — Puzzles only assigns to it.
 
 // ── Move history (keyboard navigation) ──────────────────────────────────────
 // positionHistory holds only positions the solver has actually reached this
@@ -293,6 +293,15 @@ const offlineRetryBtn = document.getElementById("pzOfflineRetryBtn");
 // touching currentNode (which stays the source of truth for legality checks,
 // hints, and everywhere else that must always reflect real progress rather
 // than whatever the solver is currently looking at).
+// DELIBERATELY OVERRIDES the shared renderBoard in assets/js/board-core.js.
+// Page scripts load after that file, so this declaration replaces the binding
+// for every caller — which is the intent, not an accident. Analysis and
+// Training use the shared one; this fork exists because it takes an explicit
+// `node`, paints from a decoded-image cache, clears clones still in flight
+// when a puzzle changes, counter-rotates its clones so glides survive a
+// flipped board, and routes its timers through scheduleStep so a scripted
+// opponent reply can be cancelled mid-puzzle. Merging those back would pull
+// puzzle lifecycle state into shared code, so the fork stays.
 function renderBoard(suppressGlide, node = currentNode) {
   const boardEl = document.querySelector(".board");
   const before = snapshotBoard();
@@ -1236,153 +1245,27 @@ squares.forEach((square) => {
   });
 });
 
-// ── Interaction: promotion picker ───────────────────────────────────────────
-// Same construction as Training's: positioned in viewport coordinates and
-// attached to <body>, so it is never rotated along with a flipped board.
-
-function showPromotionPicker(from, to) {
-  pendingPromotion = { from, to };
-  chess.load(currentNode.fen);
-
-  const piece = chess.get(from);
-  const isWhite = piece.color === "w";
-  const pieces = ["q", "r", "b", "n"];
-  const orderedPieces = isWhite ? pieces : [...pieces].reverse();
-
-  const toSquareEl = document.getElementById(to);
-  const squareRect = toSquareEl.getBoundingClientRect();
-  const squareSize = squareRect.width;
-
-  const popup = document.createElement("div");
-  popup.id = "promotion-popup";
-  popup.className = "promotion-popup";
-
-  orderedPieces.forEach((p) => {
-    const btn = document.createElement("div");
-    btn.className = "promotion-piece";
-    const img = document.createElement("img");
-    img.src = getPieceImage(isWhite ? "w" : "b", p);
-    img.className = "piece";
-    img.style.width = "80%";
-    img.style.height = "80%";
-    btn.appendChild(img);
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closePromotionPicker();
-      const promo = pendingPromotion;
-      pendingPromotion = null;
-      if (promo) playMove({ from: promo.from, to: promo.to, promotion: p });
-    });
-    popup.appendChild(btn);
-  });
-
-  popup.style.position = "fixed";
-  let pxTop = squareRect.top;
-  if (pxTop + squareSize * 4 > window.innerHeight) {
-    pxTop = squareRect.bottom - squareSize * 4;
-  }
-  popup.style.left =
-    Math.max(8, Math.min(squareRect.left, window.innerWidth - squareSize - 8)) + "px";
-  popup.style.top = Math.max(8, pxTop) + "px";
-  popup.style.width = squareSize + "px";
-
-  document.body.appendChild(popup);
-  setTimeout(() => document.addEventListener("click", outsidePromotionClick), 0);
-}
-
-// ── Interaction: drag and drop ──────────────────────────────────────────────
-// onDragMove / onDragEnd live in board-core.js and call back into
-// getDragTargetSquare, isLegalMove, isPromotionMove and playMove.
-
-function getDragTargetSquare(clientX, clientY) {
-  const boardEl = document.querySelector(".board");
-  const boardRect = boardEl.getBoundingClientRect();
-  const squareSize = boardRect.width / 8;
-  const col = Math.floor((clientX - boardRect.left) / squareSize);
-  const row = Math.floor((clientY - boardRect.top) / squareSize);
-  if (col < 0 || col > 7 || row < 0 || row > 7) return null;
-
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  if (boardFlipped) return files[7 - col] + (row + 1);
-  return files[col] + (8 - row);
-}
-
-function startDrag(e, square) {
-  const pieceEl = square.querySelector(".piece");
-  if (!pieceEl) return;
-  if (!canInteract()) return;
+// ── Interaction: promotion picker, drag and drop ────────────────────────────
+// showPromotionPicker, getDragTargetSquare, startDrag, onDragMove, onDragEnd
+// and the board pointer listeners — moved to
+// assets/js/board-core.js.
+//
+// Puzzles' one difference from the shared behaviour is WHEN a drag is
+// allowed, which board-core asks about through this optional hook. chess is
+// already loaded with the current position by the time it runs.
+function canStartDrag() {
+  if (!canInteract()) return false;
 
   if (!isViewingLivePosition()) {
     showToast("Go to the current position to continue");
-    return;
+    return false;
   }
 
-  chess.load(currentNode.fen);
-  if (chess.turn() !== solverColor) return;
-
-  const pieceColor = pieceEl.src.includes("/w_") ? "w" : "b";
-  if (pieceColor !== chess.turn()) return;
-
-  e.preventDefault();
-
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  const boardEl = document.querySelector(".board");
-  const squareSize = boardEl.getBoundingClientRect().width / 8;
-
-  const ghost = document.createElement("img");
-  ghost.src = pieceEl.src;
-  ghost.className = "piece drag-ghost";
-  ghost.style.cssText = `
-    position:fixed;pointer-events:none;z-index:1000;
-    left:0;top:0;
-    width:${squareSize}px;height:${squareSize}px;
-    will-change:transform;
-  `;
-  setGhostTransform(ghost, clientX, clientY, DRAG_GHOST_SCALE);
-  document.body.appendChild(ghost);
-
-  pieceEl.style.opacity = "0.25";
-  square.style.outline = "3px solid rgba(255,255,255,0.4)";
-  showValidMoves(square.id);
-
-  if (selectedSquare && selectedSquare !== square) {
-    selectedSquare.style.outline = "none";
-    selectedSquare = null;
-  }
-
-  dragState = {
-    pieceEl,
-    ghost,
-    fromSquare: square,
-    fromRect: square.getBoundingClientRect(),
-  };
+  // Only the side the solver is playing may move.
+  return chess.turn() === solverColor;
 }
 
-const boardElForDrag = document.querySelector(".board");
-
-boardElForDrag.addEventListener("mousedown", (e) => {
-  // Analysis and Training already guard this; Puzzles did not. Without it, a
-  // right-mousedown used to start an annotation arrow could simultaneously
-  // start a piece drag underneath it.
-  if (e.button !== 0) return;
-  const square = e.target.closest(".square");
-  if (square) startDrag(e, square);
-});
-
-boardElForDrag.addEventListener(
-  "touchstart",
-  (e) => {
-    const square = e.target.closest(".square");
-    if (square) startDrag(e, square);
-  },
-  { passive: false },
-);
-
-document.addEventListener("mousemove", onDragMove, { passive: true });
-document.addEventListener("touchmove", onDragMove, { passive: true });
-document.addEventListener("mouseup", onDragEnd);
-document.addEventListener("touchend", onDragEnd);
+attachBoardDragListeners();
 
 // ── Controls ────────────────────────────────────────────────────────────────
 

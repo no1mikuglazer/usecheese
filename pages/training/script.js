@@ -110,131 +110,7 @@ function analyzePosition() {
 
 // snapshotBoard — moved to assets/js/board-core.js
 
-function renderBoard(suppressGlide) {
-  // suppressGlide = true when drag already positioned the piece visually
-  const boardEl = document.querySelector(".board");
-  const before = snapshotBoard();
-
-  chess.load(currentNode.fen);
-  clearBoard();
-
-  chess.board().forEach((row, rowIndex) => {
-    row.forEach((piece, colIndex) => {
-      if (!piece) return;
-
-      const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
-      const squareId = files[colIndex] + (8 - rowIndex);
-
-      const square = document.getElementById(squareId);
-
-      const img = document.createElement("img");
-
-      img.classList.add("piece");
-
-      img.src = getPieceImage(piece.color, piece.type);
-
-      square.appendChild(img);
-    });
-  });
-
-  // ── Last-move highlight + king-in-check flash ──────────────────────────────
-  // Runs on every render, so it updates after each move and when navigating
-  // forward/backward through move history and variations.
-  applyLastMoveHighlight();
-  if (chess.in_check()) {
-    flashCheck(findKingSquare(chess, chess.turn()));
-  }
-
-  if (!currentNode.move) return;
-
-  const move = currentNode.move;
-  const fromData = before[move.from];
-  if (!fromData) return;
-
-  const toSquareEl = document.getElementById(move.to);
-  if (!toSquareEl) return;
-
-  const boardRect = boardEl.getBoundingClientRect();
-  const toRect = toSquareEl.getBoundingClientRect();
-
-  // ── Motion trail ───────────────────────────────────────────────────────────
-  // Drawn ahead of the glide's own conditions below, so it also appears for a
-  // dragged piece and on a flipped board. Unlike the piece clone, a symmetric
-  // gradient has no orientation, so it simply rotates with the board (it is
-  // told about the flip so its anchor can be converted into the board's own,
-  // rotated coordinate space). Shared with Analysis and Puzzles via
-  // assets/js/board-core.js.
-  drawMotionTrail(boardEl, boardRect, fromData.rect, toRect, boardFlipped);
-
-  // When the board is flipped (player is Black) the glide clones would render
-  // mirrored/un-rotated and cause a per-move orientation flicker, so skip them.
-  if (suppressGlide || boardFlipped) return;
-
-  // ── Glide animation for click-to-move ──────────────────────────────────────
-  // Fade out any captured piece
-  if (before[move.to]) {
-    const cap = document.createElement("img");
-    cap.src = before[move.to].src;
-    cap.className = "piece anim-capture";
-    // The transition is declared up front and the value changed two frames
-    // later. Setting both together lets the browser collapse them into one
-    // style resolution, in which case no transition runs — and the element,
-    // whose removal was hooked to transitionend, then lingers invisibly at
-    // opacity 0 and inflates the board's piece count.
-    cap.style.cssText = `position:absolute;pointer-events:none;z-index:10;
-      width:${before[move.to].rect.width}px;height:${before[move.to].rect.height}px;
-      left:${before[move.to].rect.left - boardRect.left}px;
-      top:${before[move.to].rect.top - boardRect.top}px;
-      transition:opacity 150ms ease;opacity:1;`;
-    boardEl.appendChild(cap);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        cap.style.opacity = "0";
-      });
-    });
-
-    // Removal is scheduled rather than left to transitionend alone, so a
-    // transition that never fires cannot strand the element.
-    setTimeout(() => cap.remove(), 400);
-  }
-
-  // Glide the piece
-  const toEl = toSquareEl.querySelector(".piece");
-  if (toEl) toEl.style.opacity = "0";
-
-  const fly = document.createElement("img");
-  fly.src = fromData.src;
-  fly.className = "piece anim-fly";
-  const sl = fromData.rect.left - boardRect.left;
-  const st = fromData.rect.top - boardRect.top;
-  const el = toRect.left - boardRect.left;
-  const et = toRect.top - boardRect.top;
-  fly.style.cssText = `position:absolute;pointer-events:none;z-index:20;
-    width:${fromData.rect.width}px;height:${fromData.rect.height}px;
-    left:${sl}px;top:${st}px;will-change:transform;
-    transition:transform 200ms cubic-bezier(0.25,0.1,0.25,1);transform:translate(0,0);`;
-  boardEl.appendChild(fly);
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      fly.style.transform = `translate(${el - sl}px,${et - st}px)`;
-    });
-  });
-
-  // The destination piece is hidden while the clone flies over it, so this
-  // must run even if the transition never fires — otherwise that piece would
-  // stay invisible until the next render. Scheduled as well as hooked to
-  // transitionend, and written to be safe to run twice.
-  const finishGlide = () => {
-    fly.remove();
-    if (toEl) toEl.style.opacity = "1";
-  };
-
-  fly.addEventListener("transitionend", finishGlide, { once: true });
-  setTimeout(finishGlide, 450);
-}
+// renderBoard — moved to assets/js/board-core.js
 
 // clearBoard, getPieceImage, HIGHLIGHT_FILES, clearBoardHighlights,
 // applyLastMoveHighlight, findKingSquare, flashCheck, flashKingIfInCheck —
@@ -385,151 +261,42 @@ squares.forEach((square) => {
 
 // promotion picker
 
-let pendingPromotion = null;
 
-function showPromotionPicker(from, to) {
-  pendingPromotion = { from, to };
-  chess.load(currentNode.fen);
-  const piece = chess.get(from);
-  const isWhite = piece.color === "w";
-  const pieces = ["q", "r", "b", "n"];
-  const orderedPieces = isWhite ? pieces : [...pieces].reverse();
-  const toSquareEl = document.getElementById(to);
-  const squareRect = toSquareEl.getBoundingClientRect();
-  const squareSize = squareRect.width;
-  const popup = document.createElement("div");
-  popup.id = "promotion-popup";
-  popup.className = "promotion-popup";
-  orderedPieces.forEach((p) => {
-    const btn = document.createElement("div");
-    btn.className = "promotion-piece";
-    const img = document.createElement("img");
-    img.src = getPieceImage(isWhite ? "w" : "b", p);
-    img.className = "piece";
-    img.style.width = "80%";
-    img.style.height = "80%";
-    btn.appendChild(img);
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closePromotionPicker();
-      playMove({
-        from: pendingPromotion.from,
-        to: pendingPromotion.to,
-        promotion: p,
-      });
-      pendingPromotion = null;
-    });
-    popup.appendChild(btn);
-  });
-  // Position in viewport coordinates and attach to <body> so the picker is
-  // never rotated with the board (works when playing as Black / flipped).
-  popup.style.position = "fixed";
-  let pxLeft = squareRect.left;
-  let pxTop = squareRect.top;
-  if (pxTop + squareSize * 4 > window.innerHeight) {
-    pxTop = squareRect.bottom - squareSize * 4;
-  }
-  popup.style.left = Math.max(8, Math.min(pxLeft, window.innerWidth - squareSize - 8)) + "px";
-  popup.style.top = Math.max(8, pxTop) + "px";
-  popup.style.width = squareSize + "px";
-  document.body.appendChild(popup);
-  setTimeout(() => {
-    document.addEventListener("click", outsidePromotionClick);
-  }, 0);
-}
+// showPromotionPicker — moved to assets/js/board-core.js
 
 // outsidePromotionClick, closePromotionPicker — moved to assets/js/board-core.js
 
 // ── DRAG AND DROP ────────────────────────────────────────────────────────────
-
-let boardFlipped = false;
+// boardFlipped is declared in assets/js/board-core.js (a second `let` here
+// would be a SyntaxError, not a shadow) — Training only assigns to it.
 
 // Training play-vs-bot state (set when a game starts)
 let trGameActive = false;
 let trPlayerColor = "w"; // colour the human plays
 let trEngineColor = "b"; // colour Stockfish plays
 
-let dragState = null;
-
-function getDragTargetSquare(clientX, clientY) {
-  const boardEl = document.querySelector(".board");
-  const boardRect = boardEl.getBoundingClientRect();
-  const squareSize = boardRect.width / 8;
-  const col = Math.floor((clientX - boardRect.left) / squareSize);
-  const row = Math.floor((clientY - boardRect.top) / squareSize);
-  if (col < 0 || col > 7 || row < 0 || row > 7) return null;
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  if (boardFlipped) return files[7 - col] + (row + 1);
-  return files[col] + (8 - row);
-}
-
-// isLegalMove, animateSnapBack — moved to assets/js/board-core.js
-
-function startDrag(e, square) {
-  const pieceEl = square.querySelector(".piece");
-  if (!pieceEl) return;
-  chess.load(currentNode.fen);
+// getDragTargetSquare, startDrag and the board pointer listeners — moved to
+// assets/js/board-core.js.
+//
+// Training's one difference from the shared behaviour is WHEN a drag is
+// allowed, which board-core asks about through this optional hook. chess is
+// already loaded with the current position by the time it runs.
+function canStartDrag() {
   // Turn enforcement: the human may only drag their own colour, on their turn.
-  if (!trGameActive || chess.turn() !== trPlayerColor) return;
+  if (!trGameActive || chess.turn() !== trPlayerColor) return false;
+
   // Linear game: block dragging while reviewing an earlier position.
   if (currentNode !== mainlineTip()) {
     showToast("Go to the latest move to continue");
-    return;
-  }
-  const pieceColor = pieceEl.src.includes("/w_") ? "w" : "b";
-  if (pieceColor !== chess.turn()) return;
-  e.preventDefault();
-
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  const boardEl = document.querySelector(".board");
-  const squareSize = boardEl.getBoundingClientRect().width / 8;
-
-  const ghost = document.createElement("img");
-  ghost.src = pieceEl.src;
-  ghost.className = "piece drag-ghost";
-  ghost.style.cssText = `
-    position:fixed;pointer-events:none;z-index:1000;
-    left:0;top:0;
-    width:${squareSize}px;height:${squareSize}px;
-    will-change:transform;
-  `;
-  setGhostTransform(ghost, clientX, clientY, DRAG_GHOST_SCALE);
-  document.body.appendChild(ghost);
-
-  pieceEl.style.opacity = "0.25";
-  square.style.outline = "3px solid rgba(255,255,255,0.4)";
-  showValidMoves(square.id);
-
-  if (selectedSquare && selectedSquare !== square) {
-    selectedSquare.style.outline = "none";
-    selectedSquare = null;
+    return false;
   }
 
-  const fromRect = square.getBoundingClientRect();
-  dragState = { pieceEl, ghost, fromSquare: square, fromRect };
+  return true;
 }
 
 // onDragMove, onDragEnd — moved to assets/js/board-core.js
 
-const boardElForDrag = document.querySelector(".board");
-boardElForDrag.addEventListener("mousedown", (e) => {
-  if (e.button !== 0) return;
-  const square = e.target.closest(".square");
-  if (square) startDrag(e, square);
-});
-boardElForDrag.addEventListener(
-  "touchstart",
-  (e) => {
-    const square = e.target.closest(".square");
-    if (square) startDrag(e, square);
-  },
-  { passive: false },
-);
-document.addEventListener("mousemove", onDragMove, { passive: true });
-document.addEventListener("touchmove", onDragMove, { passive: true });
-document.addEventListener("mouseup", onDragEnd);
-document.addEventListener("touchend", onDragEnd);
+attachBoardDragListeners();
 
 // ── END DRAG AND DROP ────────────────────────────────────────────────────────
 
