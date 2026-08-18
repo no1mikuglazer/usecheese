@@ -74,11 +74,8 @@ let isOwnProfile = false;
 let profileOptionsCache = null; // { banners, openings } — fetched once, lazily
 let chartPoints = []; // [{ x, y, rating, attemptedAt }] in SVG viewBox coords
 
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[c]);
-}
+// escapeHtml — defined by assets/js/clerk-client.js, which every page
+// carrying the nav already loads before this file.
 
 // ── Status / page visibility ────────────────────────────────────────────
 

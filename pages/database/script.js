@@ -274,12 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     backBtn.addEventListener('click', () => { location.hash = ''; });
     window.addEventListener('hashchange', route);
 
-    // ── Helper ─────────────────────────────────────────────────────────────────
-    function escapeHtml(str) {
-        return String(str).replace(/[&<>"']/g, c => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-        }[c]));
-    }
+    // escapeHtml — defined by assets/js/clerk-client.js, which every page
+    // carrying the nav already loads before this file.
 
     // ── Go ─────────────────────────────────────────────────────────────────────
     renderPlayers();

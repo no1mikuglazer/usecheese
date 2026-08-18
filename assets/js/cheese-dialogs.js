@@ -126,7 +126,7 @@
   }
 
   function open(config) {
-    const { overlay, dialog, titleEl, messageEl, inputEl, actionsEl } = build();
+    const { overlay, titleEl, messageEl, inputEl, actionsEl } = build();
 
     // A dialog already open (e.g. a double-triggered action) is resolved as
     // cancelled rather than left stacked underneath the new one.

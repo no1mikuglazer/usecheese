@@ -22,20 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let pendingSignUp = null; // the in-progress SignUp resource while a code is outstanding
 
-  function showError(message) {
-    errorEl.textContent = message;
-    errorEl.classList.add("auth-error-visible");
-  }
-
-  function clearError() {
-    errorEl.textContent = "";
-    errorEl.classList.remove("auth-error-visible");
-  }
-
-  function messageFromClerkError(err, fallback) {
-    const first = err && err.errors && err.errors[0];
-    return (first && (first.longMessage || first.message)) || fallback;
-  }
+  // The three bodies below live in assets/js/auth-form.js, shared with Log
+  // In. These wrappers just bind this page's own error element once, so the
+  // call sites read the same as they always did.
+  const showError = (message) => showAuthError(errorEl, message);
+  const clearError = () => clearAuthError(errorEl);
 
   function setBusy(button, busy, busyLabel, restLabel) {
     button.disabled = busy;
