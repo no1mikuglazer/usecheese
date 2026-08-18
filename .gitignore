@@ -1,5 +1,6 @@
 # Local tooling / editor state (not project source)
 .claude/
+.playwright-mcp/
 .vscode/
 .idea/
 

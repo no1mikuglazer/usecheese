@@ -402,7 +402,15 @@
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <!-- Subresource Integrity: the browser hashes the fetched file and refuses
+         to run it unless the hash matches, so a compromised or swapped CDN
+         response cannot execute here. This is cdnjs's published sha512 for
+         this exact version, re-derived from the bytes actually served.
+         crossorigin is required for the check to run at all. Pinned to
+         0.10.3 — bumping the version needs a new hash. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+            integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+            crossorigin="anonymous"></script>
     <script src="../../assets/js/board-core.js"></script>
     <script src="../../assets/js/board-annotations.js"></script>
     <script src="../../assets/js/api-client.js"></script>

@@ -11,8 +11,8 @@ export function notFoundHandler(req, res) {
 }
 
 // Express identifies error middleware by arity — `next` must stay declared
-// even though it is unused.
-// eslint-disable-next-line no-unused-vars
+// even though it is unused. (eslint.config.mjs sets `args: "none"`, so no
+// per-line disable is needed for it.)
 export function errorHandler(err, req, res, next) {
   if (err instanceof ApiError) {
     const body = { error: err.code };

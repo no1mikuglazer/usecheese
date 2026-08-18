@@ -12,7 +12,8 @@
     "start": "node src/index.js",
     "import:puzzles": "node scripts/import-puzzles.js",
     "shrink:puzzles": "node scripts/shrink-database.js",
-    "init:users-db": "node scripts/init-users-db.js"
+    "init:users-db": "node scripts/init-users-db.js",
+    "lint": "cd .. && eslint ."
   },
   "dependencies": {
     "@clerk/express": "^2.1.52",
@@ -24,5 +25,8 @@
     "helmet": "^8.0.0",
     "hyparquet": "^1.10.0",
     "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5"
   }
 }
