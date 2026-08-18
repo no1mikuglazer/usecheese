@@ -520,11 +520,14 @@ the pre-move `style.css` in this changelog. **No functional bugs were found.**
 
 ---
 
-# Project Status: Complete
+# Project Status: Active
 
-Cheese is **finished**. V1.4.1 is the final release, and development has ended.
+V1.4.1 was released in August 2026 and was, at the time, intended to be the
+last one — development stopped there. **It has since restarted.** V1.4.1
+remains the latest released version and what the live site serves; the next
+release will be documented above this section when it ships.
 
-What shipped is a complete desktop chess study platform: engine analysis,
+What shipped through v1.4.1 is a complete desktop chess study platform: engine analysis,
 opening exploration, a master game database, play against Stockfish, a 1.7
 million–puzzle tactics trainer, user accounts with persisted ratings and public
 profiles, and local saved analyses — across nine pages, a static frontend and a
@@ -532,8 +535,9 @@ Node/SQLite API, with no build step.
 
 ### Considered but not built
 
-These were on the roadmap during development and were never started. They are
-recorded here as the honest boundary of what Cheese does, not as pending work:
+These were on the roadmap through v1.4.1 and were never started. They are
+recorded here as the honest boundary of what Cheese does today — not as a
+commitment, but no longer ruled out either:
 
 - **Mobile support** — Cheese is desktop-only and shows an explanatory notice
   below 768px. This is the single largest thing it does not do.

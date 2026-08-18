@@ -4,13 +4,16 @@
 
 **Live at [usecheese.xyz](https://usecheese.xyz)**
 
-> ### 🧀 This project is complete
+> ### 🧀 Development has resumed
 >
-> Cheese is **finished**. **v1.4.1** is the final release and active development
-> has ended — no further features are planned. The site is live and fully
-> functional; what is described below is the finished product, not a work in
-> progress. See [Scope](#scope--what-cheese-does-not-do) for the boundary of
-> what it does, and the [changelog](docs/CHANGELOG.md) for how it got here.
+> Cheese was wrapped up at **v1.4.1** in August 2026, and for a while that was
+> the end of it. It isn't any more — **active development has restarted**.
+>
+> v1.4.1 is still the latest *released* version and what the live site serves,
+> so everything described below is real and working today. What has changed is
+> that it is no longer the final word. See
+> [Scope](#scope--what-cheese-does-not-do) for what it does and doesn't do
+> right now, and the [changelog](docs/CHANGELOG.md) for how it got here.
 
 ---
 
@@ -20,13 +23,13 @@
 
 Every board feature — analysis, openings, the database, playing Stockfish — runs entirely in your browser, with no account needed. The Puzzles page additionally talks to the Cheese API, a small backend that serves positions from a database of 1.7 million tactics puzzles, sampled across every difficulty from the full 5.8 million–puzzle Lichess import (see [`server/`](server/)). Puzzles are free to try without an account — 5 puzzles, then a prompt to sign up. A free account (via [Clerk](https://clerk.com)) removes that limit and adds a persisted puzzle rating that goes up or down with each solve, plus a public profile showing your rating history, recent activity and the tactical themes you have met.
 
-Cheese is **desktop-only**. Below 768px every page shows an explanatory notice rather than a broken layout. This is by design and will not change — see [Scope](#scope--what-cheese-does-not-do).
+Cheese is **desktop-only**. Below 768px every page shows an explanatory notice rather than a broken layout. This is by design — see [Scope](#scope--what-cheese-does-not-do).
 
 ---
 
 ## Features
 
-Everything below is live in **Version 1.4.1**, the final release.
+Everything below is live in **Version 1.4.1**, the current release.
 
 | Feature | Description |
 | --- | --- |
@@ -73,8 +76,10 @@ Cloudflare Pages; the API runs on Railway (see
 
 ## Scope — what Cheese does *not* do
 
-Development is complete, so these are permanent limitations rather than pending
-work. They were considered during development and deliberately not built:
+These are the boundaries of what Cheese does **today**. Each was considered
+during development and deliberately not built — they are decisions already
+made, not a roadmap, but with development active again none of them are
+permanent:
 
 - **Mobile** — Cheese is desktop-only and shows an explanatory notice below
   768px. This is the single largest thing it does not do.
@@ -138,12 +143,13 @@ Cheese is built to be a **calm, distraction-free environment for studying chess*
 
 ## Version
 
-This README corresponds to **Version 1.4.1** — the **final** release.
+This README corresponds to **Version 1.4.1** — the current release.
 
 Cheese was built between May and August 2026, from a single analysis board
 ([v1.0](docs/CHANGELOG.md)) to a nine-page study platform with its own backend,
-puzzle database and account system. The full history is in the
-[changelog](docs/CHANGELOG.md).
+puzzle database and account system. That run ended at v1.4.1; development has
+since resumed, and the next release will build on it. The full history is in
+the [changelog](docs/CHANGELOG.md).
 
 ---
 
@@ -160,7 +166,7 @@ You are free to use, study, share, and modify Cheese under the terms of the GPL-
 ## Thank You
 
 Thanks for checking out **Cheese**! It started as a chessboard that could barely
-track a move and ended as a platform I'm genuinely proud of. It's finished now —
-the site stays live, and it is what it was always meant to be.
+track a move and grew into a platform I'm genuinely proud of. The site stays
+live — and after a spell of calling it done, I'm building on it again.
 
 Enjoy your study, and happy analysing. ♟️🧀
