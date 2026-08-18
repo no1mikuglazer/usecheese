@@ -19,6 +19,17 @@ const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 const RECENT_ACTIVITY_LIMIT = 15;
 const MIN_THEME_ATTEMPTS = 5;
 
+// Ceilings on the two per-profile history queries. Both used to be unbounded,
+// so a heavy user's profile view got steadily more expensive forever.
+//
+// 500 points is already far more than the rating chart can resolve — it is
+// drawn a few hundred pixels wide, so beyond that the points are sub-pixel and
+// the extra rows change nothing on screen. 2000 attempts is a generous window
+// for the theme breakdown: well past the MIN_THEME_ATTEMPTS threshold for
+// every motif a player meets regularly.
+const RATING_HISTORY_LIMIT = 500;
+const THEME_WINDOW_LIMIT = 2000;
+
 // Lichess mixes game-phase, length, and evaluation descriptors in with real
 // tactical motifs — none of these describe a *skill*, so "weak at short
 // puzzles" or "weak at middlegame" would be meaningless noise in the
@@ -68,15 +79,33 @@ function getStatements() {
       ORDER BY attempted_at DESC, id DESC
       LIMIT ?
     `),
+    // Bounded, unlike the first version of this query, which returned EVERY
+    // attempt a user had ever made and shipped all of them to the profile
+    // page on every view — a cost with no ceiling that grows for exactly the
+    // users who use the site most. The inner select takes the newest
+    // RATING_HISTORY_LIMIT rows; the outer one puts them back in
+    // oldest-first order, which is how the chart plots them.
     ratingHistory: db.prepare(`
-      SELECT rating_after, attempted_at
-      FROM puzzle_attempts
-      WHERE clerk_user_id = ? AND rating_after IS NOT NULL
+      SELECT rating_after, attempted_at FROM (
+        SELECT rating_after, attempted_at, id
+        FROM puzzle_attempts
+        WHERE clerk_user_id = ? AND rating_after IS NOT NULL
+        ORDER BY attempted_at DESC, id DESC
+        LIMIT ?
+      )
       ORDER BY attempted_at ASC, id ASC
     `),
-    allThemeAttempts: db.prepare(
-      "SELECT themes, failed, used_hint FROM puzzle_attempts WHERE clerk_user_id = ?",
-    ),
+    // Also bounded, for the same reason. Note this makes the strengths/
+    // weaknesses breakdown a rolling window over recent play rather than a
+    // whole-career tally — which is the more useful reading anyway: a motif
+    // you kept missing thousands of puzzles ago is not a current weakness.
+    recentThemeAttempts: db.prepare(`
+      SELECT themes, failed, used_hint
+      FROM puzzle_attempts
+      WHERE clerk_user_id = ?
+      ORDER BY attempted_at DESC, id DESC
+      LIMIT ?
+    `),
   };
   return statements;
 }
@@ -312,10 +341,12 @@ export async function getPublicProfile(username, viewerClerkUserId) {
     .map(toActivityShape);
 
   const ratingHistory = stmts.ratingHistory
-    .all(user.clerk_user_id)
+    .all(user.clerk_user_id, RATING_HISTORY_LIMIT)
     .map((row) => ({ rating: row.rating_after, attemptedAt: row.attempted_at }));
 
-  const themeBreakdown = computeThemeBreakdown(stmts.allThemeAttempts.all(user.clerk_user_id));
+  const themeBreakdown = computeThemeBreakdown(
+    stmts.recentThemeAttempts.all(user.clerk_user_id, THEME_WINDOW_LIMIT),
+  );
 
   return {
     username: user.username,

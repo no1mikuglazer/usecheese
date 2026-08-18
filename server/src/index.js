@@ -5,6 +5,7 @@ import path from "node:path";
 import { config } from "./config.js";
 import { createApp } from "./app.js";
 import { getDb, closeDb } from "./db/connection.js";
+import { closeUsersDb } from "./db/usersConnection.js";
 import { getPuzzleCount } from "./modules/puzzles/puzzles.service.js";
 
 // The host can bind-mount the volume a moment after the app process starts
@@ -77,7 +78,13 @@ async function start() {
     process.on(signal, () => {
       console.log(`\n[server] ${signal} received, shutting down`);
       server.close(() => {
+        // Both connections, not just the puzzle one. The accounts database is
+        // the only one that is ever written to, so it is the one that actually
+        // has a WAL to check point — leaving it open on the way out was the
+        // wrong half to skip. closeUsersDb() is a no-op if nothing ever opened
+        // it (a deploy that served no authenticated request).
         closeDb();
+        closeUsersDb();
         process.exit(0);
       });
     });

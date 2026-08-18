@@ -81,6 +81,15 @@ function createSchema(database) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
+
+    -- Every profile-page query reads one user's attempts newest-first
+    -- (recent activity, rating history, theme window — see users.service.js).
+    -- The user-only index above can find the rows but not their order, so
+    -- each of those queries had to sort the whole set afterwards just to
+    -- take the first N. With attempted_at in the index the rows come out
+    -- already ordered and the LIMIT stops the scan early.
+    CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user_time
+      ON puzzle_attempts(clerk_user_id, attempted_at DESC, id DESC);
   `);
 
   ensureColumn(database, "puzzle_stats", "rating", "rating INTEGER NOT NULL DEFAULT 200");
