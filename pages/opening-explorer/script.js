@@ -2,8 +2,9 @@
 /* =====================
    Opening Explorer — script.js  (V1 + Analysis integration)
    =====================
-   - Loads the 5 ECO JSON files ONCE on page load.
-   - Merges them into a single in-memory array (allOpenings).
+   - Loads library/eco/openings.json ONCE on page load into allOpenings.
+     That file is derived from the 5 raw ECO sources by scripts/shrink-eco.mjs
+     — see there for why the page no longer reads the sources directly.
    - Live, case-insensitive, partial-match search on the "name" field.
    - Empty search shows all openings.
    - Renders dark-panel cards (name + ECO code only) into a responsive grid.
@@ -23,13 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const sentinel    = document.getElementById('oeSentinel');
 
     // ── State ─────────────────────────────────────────────────────────────────
-    const ECO_FILES = [
-        '../../library/eco/ecoA.json',
-        '../../library/eco/ecoB.json',
-        '../../library/eco/ecoC.json',
-        '../../library/eco/ecoD.json',
-        '../../library/eco/ecoE.json',
-    ];
+    // One pre-derived file rather than the five raw library/eco/eco{A..E}.json
+    // sources. Those are FEN-keyed and carry five fields this page never reads,
+    // so loading them meant parsing 4.5MB to use 1.4MB of it. Regenerate with
+    // `node scripts/shrink-eco.mjs` after editing any source file.
+    const OPENINGS_FILE = '../../library/eco/openings.json';
 
     let allOpenings = [];     // merged, loaded once
     let filtered    = [];     // current search results
@@ -94,29 +93,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Load + merge ECO data once ────────────────────────────────────────────
     async function loadOpenings() {
         try {
-            const responses = await Promise.all(
-                ECO_FILES.map(file =>
-                    fetch(file).then(res => {
-                        if (!res.ok) throw new Error(`Failed to load ${file} (${res.status})`);
-                        return res.json();
-                    })
-                )
-            );
+            const res = await fetch(OPENINGS_FILE);
+            if (!res.ok) throw new Error(`Failed to load ${OPENINGS_FILE} (${res.status})`);
+            const rows = await res.json();
 
-            // Each file may be an array of entries, or an object/map of entries.
-            // Normalise both shapes into a flat array. Keep moves for Analysis.
-            responses.forEach(data => {
-                const entries = Array.isArray(data) ? data : Object.values(data);
-                for (const entry of entries) {
-                    if (entry && entry.name) {
-                        allOpenings.push({
-                            eco:   entry.eco   || '',
-                            name:  entry.name  || '',
-                            moves: entry.moves || '',
-                        });
-                    }
-                }
-            });
+            // Stored as [eco, name, moves] tuples — see scripts/shrink-eco.mjs
+            // for why the keys aren't repeated 12,379 times in the file.
+            // `nameLower` is built here rather than shipped: it would cost
+            // ~0.7MB in the file to save this single pass, and the search
+            // filter would otherwise lowercase every name on every keystroke.
+            allOpenings = rows.map(([eco, name, moves]) => ({
+                eco,
+                name,
+                moves,
+                nameLower: name.toLowerCase(),
+            }));
 
             // Initial view = everything
             applyFilter('');
@@ -139,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filtered = q === ''
             ? allOpenings
-            : allOpenings.filter(o => o.name.toLowerCase().includes(q));
+            : allOpenings.filter(o => o.nameLower.includes(q));
 
         // Reset the grid for the new result set
         grid.innerHTML = '';
@@ -242,11 +233,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Small helper ──────────────────────────────────────────────────────────
-    function escapeHtml(str) {
-        return str.replace(/[&<>"']/g, c => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-        }[c]));
-    }
+    // escapeHtml — defined by assets/js/clerk-client.js, which every page
+    // carrying the nav already loads before this file. That copy coerces its
+    // argument with String() first; this one did not, so it would have thrown
+    // on anything but a string.
 
     // ── Go ────────────────────────────────────────────────────────────────────
     setupRevealObserver();
