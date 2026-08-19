@@ -61,11 +61,16 @@ Everything below is live in **Version 1.4.1**, the current release.
 | `docs/` | Changelog and technical documentation artifacts |
 | `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
 | `_headers` | Response headers applied by Cloudflare Pages |
+| `eslint.config.mjs` | Lint rules for both the frontend and `server/` — run via `npm run lint` in `server/` |
 
-Only six files sit at the repository root, and each has to: `index.html` and
-`404.html` are served from there, `_headers` is only read from there, and
-`README.md`, `LICENSE` and `.gitignore` are expected there by GitHub and git.
-Everything else lives in a folder.
+Only seven files sit at the repository root, and each has to: `index.html` and
+`404.html` are served from there, `_headers` is only read from there,
+`README.md`, `LICENSE` and `.gitignore` are expected there by GitHub and git,
+and `eslint.config.mjs` must live there because ESLint resolves a flat
+config's `files` patterns against the working directory it's run from, not
+the config's own location (see that file's own header for why it's still
+kept out of a root `package.json`, which would risk tripping Cloudflare
+Pages' build detection). Everything else lives in a folder.
 
 The website and the API deploy independently. Only the Puzzles page depends on
 the API; every other page works without it. The website is hosted on
