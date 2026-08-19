@@ -1,19 +1,45 @@
 # Cloudflare Pages reads this file to attach response headers to every
 # request for the frontend. The API (Railway) already gets a solid default
-# set from helmet() in server/src/app.js — this is the frontend's equivalent,
-# which had none at all before this file existed.
+# set from helmet() in server/src/app.js — this is the frontend's equivalent.
 #
-# Deliberately NOT a Content-Security-Policy: this site loads scripts from
-# multiple external origins (Clerk's CDN, cdnjs for chess.js) and runs a
-# WASM chess engine via a Web Worker (engine/), each of which needs its own
-# careful CSP allowance (script-src, worker-src, wasm-unsafe-eval, connect-src
-# for api.usecheese.xyz). Getting that wrong fails closed — a misconfigured
-# CSP can silently blank the whole app or break Stockfish/Clerk — so it needs
-# its own dedicated pass with real testing across every page, not a header
-# bolted on during an audit. The headers below carry no such risk: none of
-# them restrict what the page is allowed to load.
+# The Content-Security-Policy below was built by walking every page's actual
+# network/script/style/worker surface (grepping for external URLs, inline
+# <script>/<style>, style="" attributes, Worker(), Audio(), CSS url()) rather
+# than guessed, then verified against a local static server that replays this
+# exact file's headers, driven by a real browser (Playwright) across all ten
+# pages. Two things the walk would not have caught on its own, found only by
+# that live pass:
+#   - Clerk's SDK spins up its own internal worker from a `blob:` URL — plain
+#     `worker-src 'self'` blocks it; needs `blob:` too.
+#   - The sha256 a person hand-computes for an inline <script> tag is easy to
+#     get subtly wrong (whitespace/boundary slicing). The hash below is the
+#     one the browser itself reported as required, not a manual computation.
+# script-src has no 'unsafe-inline': the one inline <script> in the codebase
+# (pages/puzzles/index.html, the puzzle-prefetch) runs only via its exact-byte
+# sha256 hash, so anything an attacker injected would not match and would not
+# execute. style-src keeps 'unsafe-inline' rather than trying to hash its way
+# out of it — pages/database/script.js and pages/profile/script.js build
+# style="" attributes with runtime-variable values (urls, percentages) via
+# innerHTML, which no fixed hash can cover; locking that down for real would
+# mean rewriting those call sites to use CSSOM/classes instead, which is a
+# separate refactor, not a CSP change.
+#
+# Known gaps that only a signed-in production session can settle, both narrow
+# in blast radius (neither can blank the app):
+#   - img-src allows Clerk's own domain plus img.clerk.com for avatar images;
+#     if a signed-in user's avatar actually resolves elsewhere, the failure
+#     mode is a broken image icon, not a broken page.
+#   - If this Clerk instance has bot-protection (Cloudflare Turnstile) turned
+#     on for sign-up, its challenge iframe is not accounted for here and
+#     would need frame-src/script-src/connect-src additions for
+#     challenges.cloudflare.com — only sign-up would be affected, and it
+#     would fail loudly (the widget never renders) rather than silently.
+# api.usecheese.xyz is the only non-Clerk, non-cdnjs origin because that is
+# the only one anything on this site actually calls — confirmed by the same
+# grep sweep, not assumed.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://clerk.usecheese.xyz https://cdnjs.cloudflare.com 'sha256-apBXz3Yy/rYCQfDcy2gAU6hIPwRBIvmxO2yhLNJjtBk=' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://img.clerk.com https://clerk.usecheese.xyz; font-src 'self' data:; connect-src 'self' https://api.usecheese.xyz https://clerk.usecheese.xyz; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
