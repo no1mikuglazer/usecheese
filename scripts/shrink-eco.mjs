@@ -33,8 +33,13 @@
  * search filter. It costs ~0.7MB in the file to save a pass the loader can do
  * in a millisecond, so the loader does it instead (see loadOpenings()).
  *
- * The five source files stay in the repo — they are the source of truth, and
- * this is the step that regenerates the served file from them.
+ * The five source files no longer live in library/eco/ — this site has no
+ * build step, so anything in the repo is what Cloudflare Pages deploys, and
+ * 4.3MB of files nothing ever fetches was dead weight sitting in the public
+ * tree for no benefit. They're still recoverable from git history (the
+ * commit that deleted them) if openings.json ever needs to be regenerated
+ * with different source data; restore them to library/eco/ temporarily, run
+ * this script, then remove them again.
  *
  * Usage (from the repository root):
  *   node scripts/shrink-eco.mjs
