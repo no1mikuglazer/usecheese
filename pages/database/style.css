@@ -9,13 +9,13 @@
    BODY
    ===================== */
 /* Same background implementation as the Analysis page:
-   custom_bg1.png, cover sizing, centred, no-repeat — so the page matches
+   custom_bg1.webp, cover sizing, centred, no-repeat — so the page matches
    the rest of Cheese visually. */
 
 body {
     height: 100vh;
     overflow: auto;
-    background-image: url("../../assets/backgrounds/custom_bg1.png");
+    background-image: url("../../assets/backgrounds/custom_bg1.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
