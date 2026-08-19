@@ -23,10 +23,10 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
-    "hyparquet": "^1.10.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "eslint": "^9.39.5"
+    "eslint": "^9.39.5",
+    "hyparquet": "^1.10.0"
   }
 }
