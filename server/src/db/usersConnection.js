@@ -88,6 +88,9 @@ function createSchema(database) {
     -- each of those queries had to sort the whole set afterwards just to
     -- take the first N. With attempted_at in the index the rows come out
     -- already ordered and the LIMIT stops the scan early.
+    -- scripts/init-users-db.js keeps its own copy of this schema (see that
+    -- file for why it isn't imported from here) — this index was added there
+    -- too when it was added here; keep both in sync if this changes again.
     CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user_time
       ON puzzle_attempts(clerk_user_id, attempted_at DESC, id DESC);
   `);

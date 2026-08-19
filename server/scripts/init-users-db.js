@@ -20,6 +20,15 @@
  * checkout just works without a manual step. This script exists for the
  * cases where you want that step to be explicit and visible: setting up a
  * production volume, or confirming the schema in CI.
+ *
+ * The schema below is a deliberate COPY of usersConnection.js's, not an
+ * import of it — every script in this directory is independently runnable
+ * with no dependency on src/config.js's env-var handling (including its
+ * production fail-fast checks), on purpose, so this script can run standalone
+ * against any --db path in any environment. That independence already broke
+ * this schema copy once (idx_puzzle_attempts_user_time was added over in
+ * usersConnection.js and missed here) — when editing either copy, check the
+ * other.
  */
 
 import fs from "node:fs";
@@ -107,6 +116,13 @@ function createSchema(db) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user ON puzzle_attempts(clerk_user_id);
+
+    -- See src/db/usersConnection.js's identical index for why: every
+    -- profile-page query reads one user's attempts newest-first, and this
+    -- composite index lets the LIMIT stop the scan early instead of sorting
+    -- the whole set first.
+    CREATE INDEX IF NOT EXISTS idx_puzzle_attempts_user_time
+      ON puzzle_attempts(clerk_user_id, attempted_at DESC, id DESC);
   `);
 
   ensureColumn(db, "puzzle_stats", "rating", "rating INTEGER NOT NULL DEFAULT 200");
