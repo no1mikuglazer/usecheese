@@ -34,12 +34,19 @@
 #     would need frame-src/script-src/connect-src additions for
 #     challenges.cloudflare.com — only sign-up would be affected, and it
 #     would fail loudly (the widget never renders) rather than silently.
-# api.usecheese.xyz is the only non-Clerk, non-cdnjs origin because that is
-# the only one anything on this site actually calls — confirmed by the same
-# grep sweep, not assumed.
+# api.usecheese.xyz is the only non-Clerk, non-cdnjs origin the *repo's own
+# code* calls — confirmed by the grep sweep. It is not the only origin the
+# *served page* calls: Cloudflare Pages itself injects a Cloudflare Web
+# Analytics beacon (static.cloudflareinsights.com) into the HTML at the edge,
+# after the file leaves this repo, so no grep of the source could ever have
+# found it. That one was caught live, in production, as a real CSP violation
+# — script-src blocked the beacon script, and it in turn posts back to
+# cloudflareinsights.com, hence the connect-src entry alongside it. Anything
+# else Cloudflare starts edge-injecting later will show the same way: a CSP
+# violation naming the exact blocked origin, not a silent break.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://clerk.usecheese.xyz https://cdnjs.cloudflare.com 'sha256-apBXz3Yy/rYCQfDcy2gAU6hIPwRBIvmxO2yhLNJjtBk=' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://img.clerk.com https://clerk.usecheese.xyz; font-src 'self' data:; connect-src 'self' https://api.usecheese.xyz https://clerk.usecheese.xyz; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://clerk.usecheese.xyz https://cdnjs.cloudflare.com https://static.cloudflareinsights.com 'sha256-apBXz3Yy/rYCQfDcy2gAU6hIPwRBIvmxO2yhLNJjtBk=' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://img.clerk.com https://clerk.usecheese.xyz; font-src 'self' data:; connect-src 'self' https://api.usecheese.xyz https://clerk.usecheese.xyz https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
