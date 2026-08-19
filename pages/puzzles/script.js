@@ -29,20 +29,8 @@ let currentNode = { fen: chess.fen(), move: null };
 let selectedSquare = null;
 // dragState, pendingPromotion — declared in assets/js/board-core.js
 
-const MOVE_SOUND_FILES = {
-  move: "../../assets/sounds/move-self.mp3",
-  capture: "../../assets/sounds/capture.mp3",
-  castle: "../../assets/sounds/castle.mp3",
-  check: "../../assets/sounds/move-check.mp3",
-  promote: "../../assets/sounds/promote.mp3",
-};
-
-const moveSounds = {};
-for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
-  const audio = new Audio(src);
-  audio.preload = "auto";
-  moveSounds[name] = audio;
-}
+// MOVE_SOUND_FILES, moveSounds, playSound, moveSoundName — declared in
+// assets/js/board-core.js
 
 // ── Piece asset preloading ──────────────────────────────────────────────────
 // renderBoard() paints by creating <img> elements and assigning .src. On an

@@ -117,6 +117,14 @@ const sharedAppGlobals = {
   renderBoard: "writable",
   DRAG_GHOST_SCALE: "writable",
   HIGHLIGHT_FILES: "writable",
+  GameNode: "writable",
+  MOVE_SOUND_FILES: "writable",
+  moveSounds: "writable",
+  SAVED_ANALYSES_KEY: "writable",
+  // Analysis + Training only — Puzzles has no move tree, so these two are
+  // called from two of the three board pages, not all three.
+  attachMoveNavControls: "writable",
+  attachRenameHandler: "writable",
 
   // ── pages -> assets/js/board-core.js ──
   // board-core operates on these by name; every board page must define them.
@@ -124,13 +132,10 @@ const sharedAppGlobals = {
   chess: "writable",
   currentNode: "writable",
   root: "writable",
-  moveSounds: "writable",
   selectedSquare: "writable",
   customPositionName: "writable",
   latestEngineUCILine: "writable",
   moveTreeContainer: "writable",
-  SAVED_ANALYSES_KEY: "writable",
-  GameNode: "writable",
   playMove: "writable",
   refreshUI: "writable",
   boardAnnotations: "writable",

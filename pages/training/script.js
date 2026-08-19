@@ -19,61 +19,10 @@ const newGameBtn = document.getElementById("newGameBtn");
 
 const exportPgnBtn = document.getElementById("exportPgnBtn");
 
-const undoMoveBtn = document.getElementById("undoMoveBtn");
+// undoMoveBtn, redoMoveBtn, prevMoveBtn, nextMoveBtn — looked up and wired by
+// assets/js/board-core.js's attachMoveNavControls()
 
-const redoMoveBtn = document.getElementById("redoMoveBtn");
-
-const prevMoveBtn = document.getElementById("prevMoveBtn");
-
-const nextMoveBtn = document.getElementById("nextMoveBtn");
-
-// node class
-
-class GameNode {
-  constructor({ move = null, fen = "", parent = null }) {
-    this.id = crypto.randomUUID();
-
-    this.move = move;
-
-    this.fen = fen;
-
-    this.parent = parent;
-
-    this.children = [];
-
-    this.engineEval = null;
-
-    this.engineLine = [];
-
-    this.comments = "";
-
-    this.ply = parent ? parent.ply + 1 : 0;
-  }
-
-  addChild(node) {
-    this.children.push(node);
-
-    return node;
-  }
-
-  findChildBySAN(san) {
-    return this.children.find((child) => child.move && child.move.san === san);
-  }
-
-  getPath() {
-    const path = [];
-
-    let current = this;
-
-    while (current) {
-      path.unshift(current);
-
-      current = current.parent;
-    }
-
-    return path;
-  }
-}
+// GameNode — moved to assets/js/board-core.js (shared with Analysis)
 
 // root
 
@@ -116,27 +65,8 @@ function analyzePosition() {
 // applyLastMoveHighlight, findKingSquare, flashCheck, flashKingIfInCheck —
 // moved to assets/js/board-core.js
 
-// ── Move sounds ─────────────────────────────────────────────────────────────
-// One reusable, preloaded Audio object per sound to avoid playback delay.
-// Sounds are played ONLY for newly played moves (from playMove) — never during
-// history navigation, PGN rebuilding, or engine analysis.
-
-const MOVE_SOUND_FILES = {
-  move: "../../assets/sounds/move-self.mp3",
-  capture: "../../assets/sounds/capture.mp3",
-  castle: "../../assets/sounds/castle.mp3",
-  check: "../../assets/sounds/move-check.mp3",
-  promote: "../../assets/sounds/promote.mp3",
-};
-
-const moveSounds = {};
-for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
-  const audio = new Audio(src);
-  audio.preload = "auto";
-  moveSounds[name] = audio;
-}
-
-// playSound, moveSoundName — moved to assets/js/board-core.js
+// MOVE_SOUND_FILES, moveSounds, playSound, moveSoundName — moved to
+// assets/js/board-core.js
 
 // play move
 // suppressSound = true skips audio (used for bulk auto-loading an opening so
@@ -305,67 +235,10 @@ attachBoardDragListeners();
 // moved to assets/js/board-core.js
 
 
-// undo
+// Undo/redo/first/last buttons + arrow-key navigation — wired by
+// assets/js/board-core.js's attachMoveNavControls() (shared with Analysis)
 
-undoMoveBtn.addEventListener("click", () => {
-  if (currentNode.parent) {
-    currentNode = currentNode.parent;
-
-    refreshUI();
-  }
-});
-
-// redo
-
-redoMoveBtn.addEventListener("click", () => {
-  if (currentNode.children.length) {
-    currentNode = currentNode.children[0];
-
-    refreshUI();
-  }
-});
-
-// first move
-
-prevMoveBtn.addEventListener("click", () => {
-  currentNode = root;
-
-  refreshUI();
-});
-
-// last move
-
-nextMoveBtn.addEventListener("click", () => {
-  let node = currentNode;
-
-  while (node.children.length) {
-    node = node.children[0];
-  }
-
-  currentNode = node;
-
-  refreshUI();
-});
-
-// arrow keys
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "ArrowLeft") {
-    if (currentNode.parent) {
-      currentNode = currentNode.parent;
-
-      refreshUI();
-    }
-  }
-
-  if (event.key === "ArrowRight") {
-    if (currentNode.children.length) {
-      currentNode = currentNode.children[0];
-
-      refreshUI();
-    }
-  }
-});
+attachMoveNavControls();
 
 // generatePGNFromNode — moved to assets/js/board-core.js
 
@@ -413,22 +286,11 @@ if (copyPgnBtn) {
 
 let customPositionName = null;
 
-const editNameBtn = document.getElementById("editNameBtn");
-if (editNameBtn) {
-  editNameBtn.addEventListener("click", async () => {
-    const posLabel = document.getElementById("apPositionLabel");
-    const current = posLabel ? posLabel.textContent : "Starting Position";
-    const newName = await cheeseDialogs.showPrompt("", {
-      title: "Rename analysis",
-      defaultValue: current,
-      confirmLabel: "Rename",
-    });
-    if (newName === null) return; // cancelled
-    const trimmed = newName.trim() || "Starting Position";
-    customPositionName = trimmed;
-    if (posLabel) posLabel.textContent = trimmed;
-  });
-}
+// Rename-analysis handler — wired by assets/js/board-core.js's
+// attachRenameHandler() (shared with Analysis; a no-op here since Training
+// has no #editNameBtn element)
+
+attachRenameHandler();
 
 // parseOpeningMoves, loadOpeningFromStorage — moved to assets/js/board-core.js
 // (Training never calls loadOpeningFromStorage — it starts from a clean
@@ -447,7 +309,7 @@ refreshUI();
 // the existing Games tab; clicking one reloads it through the normal
 // playMove -> refreshUI pipeline, so it behaves like a hand-played analysis.
 
-const SAVED_ANALYSES_KEY = "cheeseSavedAnalyses";
+// SAVED_ANALYSES_KEY — moved to assets/js/board-core.js
 
 // readSavedAnalyses, writeSavedAnalyses, mainlineTip, resetAnalysisState,
 // formatSavedDate, saveCurrentAnalysis \u2014 moved to assets/js/board-core.js

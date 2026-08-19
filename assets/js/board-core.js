@@ -16,10 +16,12 @@
    SyntaxError rather than a shadow.
 
    Deliberately NOT here (stay page-local):
-   playMove (Training monkey-patches it after definition), GameNode,
+   playMove (Training monkey-patches it after definition),
    updateEvalBar, analyzePosition, refreshUI, the engine Worker/stub init,
    `selectedSquare` and the square-click listener that owns it (turn
-   enforcement differs per page).
+   enforcement differs per page). `root`/`currentNode` also stay page-local
+   (each page builds its own root from its own `chess` instance) even though
+   the GameNode class they're built from lives here.
 
    Two escape hatches for per-page differences, both optional:
    - `canStartDrag(square)` — a page defines it to refuse a drag (Training
@@ -27,6 +29,56 @@
    - renderBoard — Puzzles declares its own, which replaces this one for all
      callers because page scripts load later. That fork is intentional and
      documented at both ends. */
+
+// game tree node
+// Identical in Analysis and Training — Puzzles doesn't build a move tree, so
+// this stays a two-page share rather than joining every other function here.
+
+class GameNode {
+  constructor({ move = null, fen = "", parent = null }) {
+    this.id = crypto.randomUUID();
+
+    this.move = move;
+
+    this.fen = fen;
+
+    this.parent = parent;
+
+    this.children = [];
+
+    this.engineEval = null;
+
+    this.engineLine = [];
+
+    this.comments = "";
+
+    this.ply = parent ? parent.ply + 1 : 0;
+  }
+
+  addChild(node) {
+    this.children.push(node);
+
+    return node;
+  }
+
+  findChildBySAN(san) {
+    return this.children.find((child) => child.move && child.move.san === san);
+  }
+
+  getPath() {
+    const path = [];
+
+    let current = this;
+
+    while (current) {
+      path.unshift(current);
+
+      current = current.parent;
+    }
+
+    return path;
+  }
+}
 
 // piece image
 
@@ -127,6 +179,27 @@ function flashKingIfInCheck(fen) {
 }
 
 // ── Move sounds ─────────────────────────────────────────────────────────────
+// One reusable, preloaded Audio object per sound to avoid playback delay.
+// Sounds are played ONLY for newly played moves (from playMove) — never
+// during history navigation, PGN rebuilding, or engine analysis. Paths are
+// relative to the loading PAGE (new Audio(src) resolves against the
+// document, unlike CSS url()), which is safe here because every board page
+// lives at the same pages/<name>/ depth.
+
+const MOVE_SOUND_FILES = {
+  move: "../../assets/sounds/move-self.mp3",
+  capture: "../../assets/sounds/capture.mp3",
+  castle: "../../assets/sounds/castle.mp3",
+  check: "../../assets/sounds/move-check.mp3",
+  promote: "../../assets/sounds/promote.mp3",
+};
+
+const moveSounds = {};
+for (const [name, src] of Object.entries(MOVE_SOUND_FILES)) {
+  const audio = new Audio(src);
+  audio.preload = "auto";
+  moveSounds[name] = audio;
+}
 
 function playSound(name) {
   const audio = moveSounds[name];
@@ -768,6 +841,8 @@ function loadOpeningFromStorage() {
 
 // ── Save System (localStorage) — shared read/write/format helpers ──────────
 
+const SAVED_ANALYSES_KEY = "cheeseSavedAnalyses";
+
 function readSavedAnalyses() {
   try {
     const raw = localStorage.getItem(SAVED_ANALYSES_KEY);
@@ -884,6 +959,93 @@ async function saveCurrentAnalysis() {
   });
 
   if (writeSavedAnalyses(list)) showToast('Saved "' + name + '"');
+}
+
+// ── Move-tree navigation controls (Analysis + Training only — Puzzles has no
+//    move tree to navigate, so this stays a two-page share) ─────────────────
+// Looks up its own buttons the same way attachBoardDragListeners() looks up
+// its own squares, rather than requiring each page to pass elements in.
+
+function attachMoveNavControls() {
+  const undoMoveBtn = document.getElementById("undoMoveBtn");
+  const redoMoveBtn = document.getElementById("redoMoveBtn");
+  const prevMoveBtn = document.getElementById("prevMoveBtn");
+  const nextMoveBtn = document.getElementById("nextMoveBtn");
+
+  undoMoveBtn.addEventListener("click", () => {
+    if (currentNode.parent) {
+      currentNode = currentNode.parent;
+
+      refreshUI();
+    }
+  });
+
+  redoMoveBtn.addEventListener("click", () => {
+    if (currentNode.children.length) {
+      currentNode = currentNode.children[0];
+
+      refreshUI();
+    }
+  });
+
+  prevMoveBtn.addEventListener("click", () => {
+    currentNode = root;
+
+    refreshUI();
+  });
+
+  nextMoveBtn.addEventListener("click", () => {
+    let node = currentNode;
+
+    while (node.children.length) {
+      node = node.children[0];
+    }
+
+    currentNode = node;
+
+    refreshUI();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") {
+      if (currentNode.parent) {
+        currentNode = currentNode.parent;
+
+        refreshUI();
+      }
+    }
+
+    if (event.key === "ArrowRight") {
+      if (currentNode.children.length) {
+        currentNode = currentNode.children[0];
+
+        refreshUI();
+      }
+    }
+  });
+}
+
+// ── Rename-analysis handler (Analysis + Training) ───────────────────────────
+// Training's page has no #editNameBtn element, so this is a no-op there —
+// same as before this was shared, just no longer duplicated to be a no-op.
+
+function attachRenameHandler() {
+  const editNameBtn = document.getElementById("editNameBtn");
+  if (!editNameBtn) return;
+
+  editNameBtn.addEventListener("click", async () => {
+    const posLabel = document.getElementById("apPositionLabel");
+    const current = posLabel ? posLabel.textContent : "Starting Position";
+    const newName = await cheeseDialogs.showPrompt("", {
+      title: "Rename analysis",
+      defaultValue: current,
+      confirmLabel: "Rename",
+    });
+    if (newName === null) return; // cancelled
+    const trimmed = newName.trim() || "Starting Position";
+    customPositionName = trimmed;
+    if (posLabel) posLabel.textContent = trimmed;
+  });
 }
 
 // ── Board orientation ───────────────────────────────────────────────────────
