@@ -147,8 +147,6 @@ const sharedAppGlobals = {
 
   // ── assets/js/api-client.js ──
   fetchRandomPuzzle: "writable",
-  fetchPuzzleById: "writable",
-  fetchPuzzleStats: "writable",
   fetchMyPuzzleProfile: "writable",
   submitPuzzleResult: "writable",
   fetchProfileOptions: "writable",

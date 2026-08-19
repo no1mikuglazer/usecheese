@@ -107,16 +107,6 @@ function fetchRandomPuzzle(minRating, maxRating) {
   return cheeseApiRequest("/puzzles/random?" + params.toString());
 }
 
-/* A specific puzzle by its Lichess id. */
-function fetchPuzzleById(id) {
-  return cheeseApiRequest("/puzzles/" + encodeURIComponent(id));
-}
-
-/* Total number of puzzles available. */
-function fetchPuzzleStats() {
-  return cheeseApiRequest("/puzzles/stats");
-}
-
 /* The signed-in user's profile, including persisted puzzle stats/rating.
    Requires a real Clerk session cookie — 401s otherwise. */
 function fetchMyPuzzleProfile() {
