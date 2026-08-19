@@ -9,9 +9,18 @@ import { getDb } from "../../db/connection.js";
 
 export const healthRouter = Router();
 
+// Cached lazily on first request rather than prepared fresh every poll —
+// same pattern as every *.service.js module's getStatements().
+let pingStatement = null;
+
+function getPingStatement() {
+  if (!pingStatement) pingStatement = getDb().prepare("SELECT 1 AS ok");
+  return pingStatement;
+}
+
 healthRouter.get("/", (req, res) => {
   try {
-    getDb().prepare("SELECT 1 AS ok").get();
+    getPingStatement().get();
     res.json({
       status: "ok",
       db: "ok",

@@ -409,7 +409,23 @@ export async function updateProfile(clerkUserId, patch) {
       throw ApiError.badRequest("username_update_failed", { message });
     }
 
-    stmts.updateUsername.run(patch.username, new Date().toISOString(), clerkUserId);
+    try {
+      stmts.updateUsername.run(patch.username, new Date().toISOString(), clerkUserId);
+    } catch (err) {
+      // Clerk's username update above already succeeded — if this local write
+      // then fails, Clerk and this row are now desynced with no automatic way
+      // back (a full rollback in Clerk is its own can of worms). The generic
+      // error handler already logs and 500s any rethrown error; this line
+      // exists so that 500 is findable in the logs as THIS specific failure
+      // mode, not a generic DB error, since fixing it means manually setting
+      // this row's username to match what Clerk already has.
+      console.error(
+        `[users] local username write failed AFTER Clerk succeeded — ` +
+          `clerkUserId=${clerkUserId} newUsername=${patch.username} needs manual reconciliation:`,
+        err,
+      );
+      throw err;
+    }
   }
 
   if (patch.banner !== undefined || patch.favoriteOpening !== undefined) {
