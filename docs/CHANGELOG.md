@@ -518,20 +518,62 @@ Two cosmetic issues were found and fixed: a dead `deleteGameBtn` lookup left in
 Training after its Delete button was removed in v1.4, and a stale reference to
 the pre-move `style.css` in this changelog. **No functional bugs were found.**
 
+# V1.4.2 — Test Suite & CI
+
+Completed: 20/08/2026
+
+Development resumed after v1.4.1 to close the one gap two review rounds kept
+flagging: no tests, no CI, anywhere in the repo. Not a major update — no
+user-facing change — so it's a patch release. Backend only; the frontend has
+no build step and stays manually verified.
+
+## Added
+
+- **Backend test suite** (`server/test/`) — 78 tests using Node's built-in
+  `node:test`, zero new dependencies: unit tests (rating math, error
+  formatting, validation middleware, auth middleware, zod schemas) and
+  integration tests (health check, puzzles endpoints, error handling,
+  security headers/CORS, public and authenticated user routes, puzzle
+  results) run against the real Express app over real HTTP
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — runs lint and the full
+  test suite on every push to `main` and every pull request
+- **Branch protection on `main`** — pull requests are now required, direct
+  pushes are blocked, and the CI check must pass before a PR can be merged
+- A synthetic fixture puzzles database, built automatically before tests run,
+  standing in for the real 825MB-parquet-derived database that isn't
+  practical to build in CI
+- A schema-drift regression test that runs the accounts database's init
+  script and diffs its schema against the live connection's — the automated
+  version of the manual check that caught a real schema-drift bug in v1.3.1
+
+## Technical Notes
+
+- Signed-in requests are faked with Clerk's own public
+  `Symbol.for("@clerk/express.auth")` branding mechanism, requiring zero
+  production code changes; the two Clerk calls that hit the network for real
+  are mocked with `node:test`'s built-in `t.mock.method()`
+- A dedicated canary test guards the auth-branding mechanism itself, so a
+  future Clerk upgrade that changes its contract fails loudly there instead
+  of as confusing 401s everywhere else
+- `server/README.md` documents how to run the suite and what it covers
+
 ---
 
 # Project Status: Active
 
 V1.4.1 was released in August 2026 and was, at the time, intended to be the
-last one — development stopped there. **It has since restarted.** V1.4.1
-remains the latest released version and what the live site serves; the next
-release will be documented above this section when it ships.
+last one — development stopped there, then restarted. **V1.4.2 is now the
+latest released version.** This round of work — a backend test suite, CI, and
+branch protection — is finished; the project isn't being worked on every day,
+but it isn't closed either, and the next release will be documented above
+this section whenever more work lands.
 
-What shipped through v1.4.1 is a complete desktop chess study platform: engine analysis,
-opening exploration, a master game database, play against Stockfish, a 1.7
-million–puzzle tactics trainer, user accounts with persisted ratings and public
-profiles, and local saved analyses — across nine pages, a static frontend and a
-Node/SQLite API, with no build step.
+What shipped through v1.4.2 is a complete desktop chess study platform: engine
+analysis, opening exploration, a master game database, play against
+Stockfish, a 1.7 million–puzzle tactics trainer, user accounts with persisted
+ratings and public profiles, and local saved analyses — across nine pages, a
+static frontend and a Node/SQLite API, with no build step, now backed by an
+automated test suite and CI on every push and pull request.
 
 ### Considered but not built
 
