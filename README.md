@@ -4,14 +4,16 @@
 
 **Live at [usecheese.xyz](https://usecheese.xyz)**
 
-> ### 🧀 Development has resumed
+> ### 🧀 v1.4.2 shipped — more to come later
 >
 > Cheese was wrapped up at **v1.4.1** in August 2026, and for a while that was
-> the end of it. It isn't any more — **active development has restarted**.
+> the end of it. Development resumed, and **v1.4.2** — a backend test suite
+> and CI, closing the one gap that kept holding the project back — has since
+> shipped. This round of work is finished. The project isn't being worked on
+> every day, but it isn't closed either — more will land here later.
 >
-> v1.4.1 is still the latest *released* version and what the live site serves,
-> so everything described below is real and working today. What has changed is
-> that it is no longer the final word. See
+> v1.4.2 is the latest *released* version and what the live site runs today,
+> so everything described below is real and working. See
 > [Scope](#scope--what-cheese-does-not-do) for what it does and doesn't do
 > right now, and the [changelog](docs/CHANGELOG.md) for how it got here.
 
@@ -29,7 +31,7 @@ Cheese is **desktop-only**. Below 768px every page shows an explanatory notice r
 
 ## Features
 
-Everything below is live in **Version 1.4.1**, the current release.
+Everything below is live in **Version 1.4.2**, the current release.
 
 | Feature | Description |
 | --- | --- |
@@ -60,6 +62,7 @@ Everything below is live in **Version 1.4.1**, the current release.
 | `library/` | Static content: ECO openings, master game PGNs |
 | `docs/` | Changelog and technical documentation artifacts |
 | `server/` | The Cheese backend API — see [`server/README.md`](server/README.md) |
+| `.github/workflows/` | CI — runs lint and the backend test suite on every push to `main` and every pull request |
 | `_headers` | Response headers applied by Cloudflare Pages |
 | `eslint.config.mjs` | Lint rules for both the frontend and `server/` — run via `npm run lint` in `server/` |
 
@@ -148,13 +151,15 @@ Cheese is built to be a **calm, distraction-free environment for studying chess*
 
 ## Version
 
-This README corresponds to **Version 1.4.1** — the current release.
+This README corresponds to **Version 1.4.2** — the current release.
 
 Cheese was built between May and August 2026, from a single analysis board
 ([v1.0](docs/CHANGELOG.md)) to a nine-page study platform with its own backend,
-puzzle database and account system. That run ended at v1.4.1; development has
-since resumed, and the next release will build on it. The full history is in
-the [changelog](docs/CHANGELOG.md).
+puzzle database, account system, and now an automated test suite and CI. That
+run ended at v1.4.1; development resumed and v1.4.2 closed the testing gap —
+a patch release, since it changes nothing user-facing. This round of work is
+finished, and the next release will build on it whenever development picks
+back up. The full history is in the [changelog](docs/CHANGELOG.md).
 
 ---
 
