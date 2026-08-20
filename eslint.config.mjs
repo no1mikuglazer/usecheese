@@ -221,8 +221,8 @@ export default [
     rules: browserRules,
   },
   {
-    // Node: the API, its data scripts, and the ECO derivation script.
-    files: ["server/src/**/*.js", "server/scripts/**/*.js", "scripts/**/*.mjs"],
+    // Node: the API, its data scripts, its test suite, and the ECO derivation script.
+    files: ["server/src/**/*.js", "server/scripts/**/*.js", "server/test/**/*.js", "scripts/**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
@@ -233,6 +233,9 @@ export default [
         clearTimeout: "readonly",
         Buffer: "readonly",
         URL: "readonly",
+        // Node 22's built-in global fetch — only the test suite uses it so
+        // far (hitting the app's own HTTP server in integration tests).
+        fetch: "readonly",
       },
     },
     rules: nodeRules,

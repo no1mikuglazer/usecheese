@@ -27,3 +27,8 @@ node_modules/
 server/data/*.sqlite
 server/data/*.sqlite-wal
 server/data/*.sqlite-shm
+
+# Test fixture database — rebuilt by the `pretest` script on every run.
+server/test/fixtures/*.sqlite
+server/test/fixtures/*.sqlite-wal
+server/test/fixtures/*.sqlite-shm

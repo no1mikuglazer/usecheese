@@ -13,7 +13,9 @@
     "import:puzzles": "node scripts/import-puzzles.js",
     "shrink:puzzles": "node scripts/shrink-database.js",
     "init:users-db": "node scripts/init-users-db.js",
-    "lint": "cd .. && eslint ."
+    "lint": "cd .. && eslint .",
+    "pretest": "node test/fixtures/build-puzzles-db.js",
+    "test": "node --import ./test/setup-env.js --test \"test/**/*.test.js\""
   },
   "dependencies": {
     "@clerk/express": "^2.1.52",

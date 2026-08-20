@@ -212,6 +212,31 @@ even-indexed moves being the opponent's forced replies.
 
 Errors use a consistent shape: `{ "error": "code", "details": ... }`.
 
+## Testing
+
+```bash
+npm test
+```
+
+Runs the backend's test suite (`node:test`, no extra dependencies). A
+`pretest` step first builds a small synthetic puzzles database under
+`test/fixtures/` — the real one only exists via the 825MB parquet import
+above, which isn't practical to run in CI. The user-accounts database needs
+no such fixture: it self-creates its schema in a fresh temp file per test
+process.
+
+No real Clerk account, network access, or API keys are needed: signed-in
+sessions are faked with Clerk's own public
+`Symbol.for("@clerk/express.auth")` branding mechanism (zero production code
+changes), and the two Clerk calls that hit the network for real
+(`clerkClient.users.getUser`/`updateUser`) are mocked with `node:test`'s
+built-in `t.mock.method()`. `test/support/clerk-auth-canary.test.js` guards
+this mechanism itself, so a future `@clerk/express` upgrade that changes the
+contract fails there first rather than as confusing 401s everywhere else.
+
+CI (`.github/workflows/ci.yml`) runs `npm run lint` and `npm test` on every
+push to `main` and every pull request.
+
 ## Deployment notes
 
 Runs on any host that provides Node plus a **persistent volume** (the SQLite
