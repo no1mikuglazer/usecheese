@@ -481,8 +481,9 @@ the wrong button, and making the source match what the site actually does.
 
 Completed: 15/08/2026
 
-The last change made to Cheese. A tidy-up of the repository root, and a final
-pass over the whole codebase to confirm nothing was left broken.
+Originally intended as the last change to Cheese before development resumed
+for v1.4.2. A tidy-up of the repository root, and a final pass over the whole
+codebase to confirm nothing was left broken.
 
 ## Changed
 
@@ -559,36 +560,81 @@ no build step and stays manually verified.
 
 ---
 
-# Project Status: Active
+# Final Update — Discontinuation
 
-V1.4.1 was released in August 2026 and was, at the time, intended to be the
-last one — development stopped there, then restarted. **V1.4.2 is now the
-latest released version.** This round of work — a backend test suite, CI, and
-branch protection — is finished; the project isn't being worked on every day,
-but it isn't closed either, and the next release will be documented above
-this section whenever more work lands.
+Date: 10/11/2026
 
-What shipped through v1.4.2 is a complete desktop chess study platform: engine
-analysis, opening exploration, a master game database, play against
-Stockfish, a 1.7 million–puzzle tactics trainer, user accounts with persisted
-ratings and public profiles, and local saved analyses — across nine pages, a
-static frontend and a Node/SQLite API, with no build step, now backed by an
-automated test suite and CI on every push and pull request.
+Development of Cheese has ended. This final update announces the
+discontinuation and retires the Puzzle Trainer while keeping the remaining
+chess study tools available.
+
+## Added
+
+- A shared discontinuation notice on all nine normal pages, including direct
+  entry links. It appears once per tab session; dismissal persists across
+  navigation and reloads through `sessionStorage`. The 404 page is excluded.
+- A notice styled with Cheese's existing dark glass panels, knight mark, and
+  white action button, with keyboard dismissal, focus containment, and a
+  small-screen layout that appears above the desktop-only notice.
+
+## Changed
+
+- Replaced the Puzzle Trainer with a permanent **“Puzzles are no longer
+  supported”** message and links to Analysis and Opening Explorer.
+- Removed puzzle prefetching and trainer, board, and API script loading from
+  the Puzzles page. Visiting it no longer requests puzzles.
+- Replaced “mobile support coming soon” promises with accurate desktop-only
+  messaging. Mobile support is not planned.
+- Updated profile empty states so they no longer encourage playing more
+  puzzles after retirement.
+- Updated the README and project status to document discontinuation,
+  remaining features, and the end of updates and support.
+
+## Retained
+
+- Browser-based analysis, opening exploration, master-game browsing, play
+  against Stockfish, PGN import, and local saved analyses.
+- Original puzzle and account backend source, databases, and existing user
+  data. This update does not delete them or shut down external services.
+- Account and profile pages, which still depend on Clerk and the Cheese API
+  and are no longer supported.
+
+## Validation
+
+- Lint and whitespace checks passed.
+- Browser checks confirmed the notice on all nine normal entry pages, its
+  absence on the 404 page, and dismissal persisting across page navigation.
+- Checked the desktop retirement screens, the notice at a 390px viewport,
+  and keyboard focus and dismissal.
+
+---
+
+# Project Status: Discontinued
+
+Cheese was discontinued on **November 10, 2026**. It will receive no further
+updates or support. **v1.4.2** was the last release before this final update.
+
+The site will remain available for analysis, opening exploration, master
+games, and playing against Stockfish. Saved analyses remain local to each
+browser. The Puzzle Trainer is retired.
+
+The source remains available under GPL-3.0 for study and independent forks.
+Thank you to everyone who spent time studying and playing with Cheese.
 
 ### Considered but not built
 
-These were on the roadmap through v1.4.1 and were never started. They are
-recorded here as the honest boundary of what Cheese does today — not as a
-commitment, but no longer ruled out either:
+These ideas were considered during development but were not implemented.
+They are historical notes, not a roadmap; no further development is planned:
 
 - **Mobile support** — Cheese is desktop-only and shows an explanatory notice
-  below 768px. This is the single largest thing it does not do.
+  at 768px or less.
 - **Cloud-synced saved analyses** — saved analyses live only in the browser's
   `localStorage`, so they do not follow an account across devices
-- **Puzzle themes** — puzzle themes are revealed on completion, but training
-  cannot be filtered by motif
+- **Puzzle theme filters** — the former trainer could not filter by motif;
+  the entire Puzzle Trainer is now retired
 - **Accessibility** — the board is not keyboard-navigable, there is no
-  screen-reader support, and the animated pages ignore `prefers-reduced-motion`
+  screen-reader support for board play, and most existing animations ignore
+  `prefers-reduced-motion`
 - **Link previews** — no Open Graph tags, so a shared link renders no card
 - Additional master games and further training options
 

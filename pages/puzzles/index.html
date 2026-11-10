@@ -1,113 +1,28 @@
 <!doctype html>
-<!-- Cheese — Puzzles page -->
+<!-- Cheese — retired Puzzle Trainer -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cheese — Puzzles</title>
-    <meta name="description" content="Cheese Puzzles — train your tactics." />
+    <title>Cheese — Puzzles retired</title>
+    <meta name="description" content="The Cheese Puzzle Trainer is no longer supported. Continue studying with Analysis, the Opening Explorer, and Training." />
     <link rel="icon" type="image/svg+xml" href="../../assets/icons/favicon.svg?v=1" />
-
-    <!-- The API and the chess.js CDN are separate origins that would otherwise
-         each pay a full DNS + TCP + TLS handshake at the moment they are first
-         needed. Warming them here overlaps that cost with the stylesheet and
-         script downloads below instead of adding it to the critical path.
-         `crossorigin` is required on the API hint: without it the warmed
-         socket is not reused for the CORS fetch, and the hint does nothing. -->
-    <link rel="preconnect" href="https://api.usecheese.xyz" crossorigin />
-    <link rel="dns-prefetch" href="https://api.usecheese.xyz" />
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-
-    <script>
-      /* Start the first puzzle request during HTML parse, in parallel with
-         everything below.
-
-         It previously ran from the bottom of script.js — the last of four
-         scripts — so it could not begin until chess.js, board-core.js and
-         api-client.js had all downloaded and executed. Measured on a cold
-         load that was ~850ms of dead time before the request even started.
-
-         This changes only WHEN the request is issued. It is the same single
-         request to the same endpoint: the server still chooses the puzzle,
-         and the client still holds exactly one puzzle at a time. Nothing is
-         buffered and no future puzzle is fetched ahead of being needed.
-
-         The range must match the inputs' initial values in the sidebar below;
-         loadNewPuzzle() re-checks the returned puzzle against the range that
-         is actually on screen and silently falls back to a normal fetch if it
-         does not match, so drifting defaults degrade rather than mislead. */
-      (function () {
-        var host = window.location.hostname;
-        // Kept in sync with assets/js/api-client.js, which reuses this value
-        // when present so both agree on a single base URL at runtime.
-        window.CHEESE_API_BASE =
-          host === "localhost" || host === "127.0.0.1" || host === ""
-            ? "http://localhost:3001/api"
-            : "https://api.usecheese.xyz/api";
-
-        /* The solver's saved difficulty, read here so the prefetch asks for
-           the range the page is actually about to show. Without this, anyone
-           who had ever changed difficulty would prefetch 1400-1800, have
-           loadNewPuzzle() correctly reject it as out of range, and pay for a
-           second request anyway — turning the optimization above into pure
-           waste for exactly the people who use the page most.
-
-           Kept in sync with PUZZLE_RANGE_KEY and readRatingRange() in
-           pages/puzzles/script.js, which applies the same value to the inputs
-           below (with the same clamping) before the first load. */
-        var min = 1400;
-        var max = 1800;
-
-        try {
-          var saved = JSON.parse(localStorage.getItem("cheesePuzzleRange"));
-          if (saved && isFinite(saved.min) && isFinite(saved.max)) {
-            var lo = Math.min(Math.max(saved.min, 0), 3500);
-            var hi = Math.min(Math.max(saved.max, 0), 3500);
-            if (lo > hi) { var swap = lo; lo = hi; hi = swap; }
-            min = lo;
-            max = hi;
-          }
-        } catch (e) {
-          /* unreadable, unavailable, or corrupt storage — keep the defaults,
-             which still match the inputs' own initial values below. */
-        }
-
-        var promise = fetch(
-          window.CHEESE_API_BASE +
-            "/puzzles/random?minRating=" + min + "&maxRating=" + max,
-        ).then(function (res) {
-          if (!res.ok) throw new Error("prefetch failed: " + res.status);
-          return res.json();
-        });
-
-        // Nothing consumes a rejection until loadNewPuzzle() runs, so absorb
-        // it here to avoid an unhandled promise rejection in the console.
-        // Attached to the local promise rather than read back off the global,
-        // so this never depends on the assignment below having taken effect.
-        promise.catch(function () {});
-
-        window.__cheesePuzzlePrefetch = { min: min, max: max, promise: promise };
-      })();
-    </script>
-
     <link rel="stylesheet" href="../../assets/css/nav.css" />
-    <link rel="stylesheet" href="../../assets/css/board-layout.css" />
-    <link rel="stylesheet" href="../../assets/css/cheese-dialogs.css" />
     <link rel="stylesheet" href="../../assets/css/error-state.css" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="../../assets/css/mobile-gate.css" />
+    <link rel="stylesheet" href="../../assets/css/discontinued.css" />
   </head>
 
   <body>
-
-    <!-- MOBILE GATE (small viewports only) -->
+    <script src="../../assets/js/discontinued.js"></script>
     <div class="mobile-gate">
       <div class="mobile-gate-card">
         <svg class="mobile-gate-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
         </svg>
-        <h1 class="mobile-gate-title">Mobile Support Coming Soon</h1>
-        <p class="mobile-gate-text">Cheese v1.4 is currently optimized for desktop devices. Mobile support is still under development, and a future update will bring a fully responsive experience. Sorry for the inconvenience &mdash; thanks for your patience.</p>
+        <h1 class="mobile-gate-title">Puzzles are no longer supported</h1>
+        <p class="mobile-gate-text">The Puzzle Trainer has been retired following the discontinuation of Cheese. Analysis, openings, master games, and playing against Stockfish remain available on desktop.</p>
       </div>
     </div>
 
@@ -182,243 +97,26 @@
 
     </nav>
 
-    <!-- MAIN APP -->
-    <div class="app-container">
-
-      <div class="left-space"></div>
-
-      <!-- BOARD AREA -->
-      <div class="board-area" id="boardArea">
-
-        <!-- OPPONENT BAR -->
-        <div class="player black-player">
-          <div class="player-left">
-            <div class="player-pfp black-pfp" id="pzOpponentPfp"></div>
-            <div class="player-name" id="pzOpponentName">Opponent</div>
-          </div>
+    <main class="pz-retired-page">
+      <section class="cheese-error-card pz-retired-card" aria-labelledby="pzRetiredTitle">
+        <div class="pz-retired-emblem" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M10 24V21C10 21 8 19 8 16C8 12 11 9 13 8C13 8 12 10 13 11C14 10 15 8 17 8C20 8 22 10 22 13C22 16 20 18 19 19V24Z" fill="currentColor"/>
+            <rect x="9" y="23.5" width="14" height="2" rx="1" fill="currentColor"/>
+          </svg>
         </div>
-
-        <!-- BOARD -->
-        <div class="board">
-          <!-- ROW 8 -->
-          <div class="square light" id="a8"></div>
-          <div class="square dark" id="b8"></div>
-          <div class="square light" id="c8"></div>
-          <div class="square dark" id="d8"></div>
-          <div class="square light" id="e8"></div>
-          <div class="square dark" id="f8"></div>
-          <div class="square light" id="g8"></div>
-          <div class="square dark" id="h8"></div>
-          <!-- ROW 7 -->
-          <div class="square dark" id="a7"></div>
-          <div class="square light" id="b7"></div>
-          <div class="square dark" id="c7"></div>
-          <div class="square light" id="d7"></div>
-          <div class="square dark" id="e7"></div>
-          <div class="square light" id="f7"></div>
-          <div class="square dark" id="g7"></div>
-          <div class="square light" id="h7"></div>
-          <!-- ROW 6 -->
-          <div class="square light" id="a6"></div>
-          <div class="square dark" id="b6"></div>
-          <div class="square light" id="c6"></div>
-          <div class="square dark" id="d6"></div>
-          <div class="square light" id="e6"></div>
-          <div class="square dark" id="f6"></div>
-          <div class="square light" id="g6"></div>
-          <div class="square dark" id="h6"></div>
-          <!-- ROW 5 -->
-          <div class="square dark" id="a5"></div>
-          <div class="square light" id="b5"></div>
-          <div class="square dark" id="c5"></div>
-          <div class="square light" id="d5"></div>
-          <div class="square dark" id="e5"></div>
-          <div class="square light" id="f5"></div>
-          <div class="square dark" id="g5"></div>
-          <div class="square light" id="h5"></div>
-          <!-- ROW 4 -->
-          <div class="square light" id="a4"></div>
-          <div class="square dark" id="b4"></div>
-          <div class="square light" id="c4"></div>
-          <div class="square dark" id="d4"></div>
-          <div class="square light" id="e4"></div>
-          <div class="square dark" id="f4"></div>
-          <div class="square light" id="g4"></div>
-          <div class="square dark" id="h4"></div>
-          <!-- ROW 3 -->
-          <div class="square dark" id="a3"></div>
-          <div class="square light" id="b3"></div>
-          <div class="square dark" id="c3"></div>
-          <div class="square light" id="d3"></div>
-          <div class="square dark" id="e3"></div>
-          <div class="square light" id="f3"></div>
-          <div class="square dark" id="g3"></div>
-          <div class="square light" id="h3"></div>
-          <!-- ROW 2 -->
-          <div class="square light" id="a2"></div>
-          <div class="square dark" id="b2"></div>
-          <div class="square light" id="c2"></div>
-          <div class="square dark" id="d2"></div>
-          <div class="square light" id="e2"></div>
-          <div class="square dark" id="f2"></div>
-          <div class="square light" id="g2"></div>
-          <div class="square dark" id="h2"></div>
-          <!-- ROW 1 -->
-          <div class="square dark" id="a1"></div>
-          <div class="square light" id="b1"></div>
-          <div class="square dark" id="c1"></div>
-          <div class="square light" id="d1"></div>
-          <div class="square dark" id="e1"></div>
-          <div class="square light" id="f1"></div>
-          <div class="square dark" id="g1"></div>
-          <div class="square light" id="h1"></div>
+        <span class="cheese-error-code">Puzzle Trainer · Retired</span>
+        <h1 class="cheese-error-title" id="pzRetiredTitle">Puzzles are no longer supported</h1>
+        <p class="cheese-error-text">The Puzzle Trainer has been retired following the discontinuation of Cheese. You can still explore openings, analyse games, and play against Stockfish.</p>
+        <div class="cheese-error-actions">
+          <a class="cheese-error-btn cheese-error-btn-primary" href="../analysis/index.html">Go to Analysis <span aria-hidden="true">&rarr;</span></a>
+          <a class="cheese-error-btn cheese-error-btn-ghost" href="../opening-explorer/index.html">Explore openings</a>
         </div>
-
-        <!-- SOLVER BAR -->
-        <div class="player white-player">
-          <div class="player-left">
-            <div class="player-pfp white-pfp" id="pzSolverPfp"></div>
-            <div class="player-name" id="pzSolverName">You</div>
-          </div>
-        </div>
-
-        <!-- OFFLINE TAKEOVER — shown in place of the board and player bars when
-             the puzzle API cannot be reached at all. Only for errors the solver
-             can do nothing about from this page: a rating range with no puzzles
-             in it stays in the sidebar status banner instead, because widening
-             the range fixes it without leaving the page. Styling is shared with
-             404.html via assets/css/error-state.css; visibility is driven by
-             .pz-board-offline on .board-area (see pages/puzzles/style.css and
-             setBoardOffline() in script.js). -->
-        <div class="cheese-error pz-offline" id="pzOfflinePanel">
-          <div class="cheese-error-card">
-
-            <svg class="cheese-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12" y2="16.5"/>
-            </svg>
-
-            <span class="cheese-error-code">Connection Error</span>
-            <h2 class="cheese-error-title">Puzzles are offline</h2>
-            <p class="cheese-error-text">
-              We can&rsquo;t reach the Cheese puzzle server right now. Analysis,
-              Training, the Opening Explorer and Master Games all still work.
-            </p>
-
-            <div class="cheese-error-actions">
-              <button type="button" class="cheese-error-btn cheese-error-btn-primary" id="pzOfflineRetryBtn">Try Again</button>
-              <a class="cheese-error-btn cheese-error-btn-ghost" href="../../index.html">Back to Home</a>
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-      <!-- SIDEBAR -->
-      <div class="sidebar">
-        <div class="pz-panel">
-
-          <!-- HEADER — signed-out: puzzle count (today's behavior). Signed-in:
-               the user's own persisted rating, shown directly with no label,
-               plus a +N/-N popup anchored to it after each solve. See
-               pages/puzzles/script.js. -->
-          <div class="pz-panel-header">
-            <div class="pz-header-stat" id="pzHeaderStat">
-              <span class="pz-header-stat-value" id="pzTotalCount">&nbsp;</span>
-              <span class="pz-rating-popup" id="pzRatingPopup"></span>
-            </div>
-          </div>
-
-          <!-- STATUS BANNER -->
-          <div class="pz-status pz-status-idle" id="pzStatus">
-            <span class="pz-status-icon" id="pzStatusIcon"></span>
-            <div class="pz-status-text">
-              <div class="pz-status-title" id="pzStatusTitle">Loading…</div>
-              <div class="pz-status-sub" id="pzStatusSub">Fetching your first puzzle</div>
-            </div>
-          </div>
-
-          <!-- PUZZLE META -->
-          <div class="pz-meta" id="pzMeta">
-            <div class="pz-meta-row">
-              <span class="pz-meta-label">Puzzle Rating</span>
-              <span class="pz-meta-value" id="pzRating">—</span>
-            </div>
-          </div>
-
-          <!-- DIFFICULTY -->
-          <div class="pz-section">
-            <div class="pz-section-label">Difficulty</div>
-            <div class="pz-presets" id="pzPresets">
-              <button class="pz-preset" data-min="400"  data-max="1000">Beginner</button>
-              <button class="pz-preset" data-min="1000" data-max="1400">Easy</button>
-              <button class="pz-preset pz-preset-active" data-min="1400" data-max="1800">Medium</button>
-              <button class="pz-preset" data-min="1800" data-max="2200">Hard</button>
-              <button class="pz-preset" data-min="2200" data-max="3300">Expert</button>
-              <button class="pz-preset" data-min="400"  data-max="3300">Any</button>
-            </div>
-            <div class="pz-range">
-              <label class="pz-range-field">
-                <span>Min</span>
-                <input type="number" id="pzMinRating" min="0" max="3500" step="50" value="1400" />
-              </label>
-              <span class="pz-range-dash">–</span>
-              <label class="pz-range-field">
-                <span>Max</span>
-                <input type="number" id="pzMaxRating" min="0" max="3500" step="50" value="1800" />
-              </label>
-            </div>
-          </div>
-
-          <!-- ACTIONS -->
-          <div class="pz-actions">
-            <button class="pz-btn pz-btn-primary" id="pzNextBtn">New Puzzle</button>
-            <div class="pz-actions-row">
-              <button class="pz-btn pz-btn-ghost" id="pzHintBtn">Hint</button>
-              <button class="pz-btn pz-btn-ghost" id="pzRetryBtn">Retry</button>
-            </div>
-          </div>
-
-          <!-- SESSION -->
-          <div class="pz-session">
-            <div class="pz-session-stat">
-              <span class="pz-session-value" id="pzSolvedCount">0</span>
-              <span class="pz-session-label">Solved</span>
-            </div>
-            <div class="pz-session-stat">
-              <span class="pz-session-value" id="pzAttemptCount">0</span>
-              <span class="pz-session-label">Attempted</span>
-            </div>
-            <div class="pz-session-stat">
-              <span class="pz-session-value" id="pzStreakCount">0</span>
-              <span class="pz-session-label">Streak</span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="right-space"></div>
-
-    </div>
-
-    <!-- Subresource Integrity: the browser hashes the fetched file and refuses
-         to run it unless the hash matches, so a compromised or swapped CDN
-         response cannot execute here. This is cdnjs's published sha512 for
-         this exact version, re-derived from the bytes actually served.
-         crossorigin is required for the check to run at all. Pinned to
-         0.10.3 — bumping the version needs a new hash. -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
-            integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
-            crossorigin="anonymous"></script>
-    <script src="../../assets/js/board-core.js"></script>
-    <script src="../../assets/js/board-annotations.js"></script>
-    <script src="../../assets/js/api-client.js"></script>
-    <script src="../../assets/js/cheese-dialogs.js"></script>
+        <p class="pz-retired-note">Thank you for every puzzle played.</p>
+      </section>
+    </main>
 
     <script data-clerk-publishable-key="pk_live_Y2xlcmsudXNlY2hlZXNlLnh5eiQ" src="https://clerk.usecheese.xyz/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>
     <script src="../../assets/js/clerk-client.js"></script>
-
-    <script src="script.js"></script>
   </body>
 </html>
