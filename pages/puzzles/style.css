@@ -1,7 +1,5 @@
-/* Cheese — Puzzles page
-   Nav styling comes from assets/css/nav.css and the board/sidebar geometry
-   from assets/css/board-layout.css; this file only adds what is specific to
-   the puzzle trainer. */
+/* Cheese — retired Puzzle Trainer. Shared nav and glass-card styles retain
+   the site's existing visual language without loading the former board. */
 
 * {
     margin: 0;
@@ -9,599 +7,77 @@
     box-sizing: border-box;
 }
 
-/* =====================
-   BODY
-   ===================== */
-
 body {
-    height: 100vh;
-    overflow: hidden;
-    background-image: url("../../assets/backgrounds/custom_bg1.webp");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    min-height: 100vh;
+    background: url("../../assets/backgrounds/custom_bg1.webp") center / cover no-repeat fixed;
     font-family: Arial, sans-serif;
     color: white;
 }
 
-/* Offset the whole app past the fixed 220px nav. */
-.app-container {
-    padding-left: 220px;
-}
-
-/* =====================
-   BOARD (shared visual language with Analysis / Training)
-   ===================== */
-
-.square {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: 0.15s;
-}
-
-.light {
-    background-image: url("../../assets/board/square_brown_light_svg.svg");
-    background-size: cover;
-}
-
-.dark {
-    background-image: url("../../assets/board/square_brown_dark_svg.svg");
-    background-size: cover;
-}
-
-.piece {
-    width: 85%;
-    height: 85%;
-    object-fit: contain;
-    user-select: none;
-    pointer-events: none;
-    transition: 0.15s;
-}
-
-.square:hover {
-    filter: brightness(1.05);
-    cursor: pointer;
-}
-
-.square:hover .piece {
-    transform: scale(1.05);
-}
-
-.square:has(.piece) { cursor: grab; }
-.square:has(.piece):active { cursor: grabbing; }
-
-/* =====================
-   OFFLINE TAKEOVER
-   ===================== */
-
-/* The card itself is styled by assets/css/error-state.css; these rules only
-   decide where it sits and when it replaces the board.
-
-   It takes over the exact box the board and both player bars occupied
-   (--board-size wide, --board-area-h tall, both from board-layout.css) so the
-   centred board+sidebar group keeps its geometry and the sidebar does not
-   shift sideways when the error appears. */
-
-.pz-offline {
-    display: none;
-    width: var(--board-size);
-    height: var(--board-area-h);
-}
-
-.board-area.pz-board-offline .pz-offline {
-    display: flex;
-}
-
-/* Hiding rather than removing: the squares keep their ids and listeners, so a
-   successful retry repaints the existing board with no re-wiring. */
-.board-area.pz-board-offline .board,
-.board-area.pz-board-offline .player {
-    display: none;
-}
-
-/* VALID MOVE DOTS */
-
-.valid-move::after {
-    content: "";
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.35);
-    position: absolute;
-}
-
-/* LAST MOVE HIGHLIGHT */
-
-.square.last-move {
-    box-shadow: inset 0 0 0 9999px rgba(255, 213, 79, 0.28);
-}
-
-/* CHECK FLASH */
-
-.square.check-flash {
-    animation: checkFlash 0.85s ease-in-out 1;
-}
-
-@keyframes checkFlash {
-    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0); }
-    25%, 75% { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0.55); }
-    50%      { box-shadow: inset 0 0 0 9999px rgba(214, 38, 38, 0); }
-}
-
-/* WRONG MOVE FLASH — puzzle-specific.
-   Same visual grammar as the check flash (a brief inset tint) but red-orange
-   and only once, so a wrong-but-legal move reads as "rejected" rather than
-   "illegal". */
-
-.square.wrong-move {
-    animation: wrongMove 0.5s ease-in-out 1;
-}
-
-@keyframes wrongMove {
-    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(232, 80, 62, 0); }
-    45%      { box-shadow: inset 0 0 0 9999px rgba(232, 80, 62, 0.6); }
-}
-
-/* CORRECT MOVE FLASH */
-
-.square.right-move {
-    animation: rightMove 0.5s ease-in-out 1;
-}
-
-@keyframes rightMove {
-    0%, 100% { box-shadow: inset 0 0 0 9999px rgba(88, 200, 120, 0); }
-    45%      { box-shadow: inset 0 0 0 9999px rgba(88, 200, 120, 0.55); }
-}
-
-/* HINT HIGHLIGHT — persists until the move is played, unlike the flashes. */
-
-.square.hint-square {
-    box-shadow: inset 0 0 0 9999px rgba(96, 165, 250, 0.4);
-}
-
-/* BOARD FLIP (solver plays Black)
-   Only the board rotates. Training also reverses the column because its bars
-   are labelled by colour; here they are labelled "You" / "Opponent", so the
-   solver must stay on the near side in both orientations. */
-
-.board-area.flipped .board { transform: rotate(180deg); }
-.board-area.flipped .board .piece { transform: rotate(180deg); }
-
-/* Keep the hover-scale from cancelling the flip rotation on a flipped board. */
-.board-area.flipped .square:hover .piece { transform: rotate(180deg) scale(1.05); }
-
-/* DRAG / MOVE ANIMATION HELPERS */
-
-/* The click-to-move glide (renderBoard() in script.js) positions the fly/cap
-   elements with `position: absolute` and left/top computed relative to the
-   board's own bounding rect. Without the board itself being a positioned
-   ancestor, those offsets resolve against the next positioned ancestor up
-   the tree instead — landing far from the board (visually: the piece
-   "flies in" from outside it) rather than from its actual square. Matches
-   Training/Analysis, which set this same rule locally for the same reason. */
-.board { position: relative; }
-
-.anim-fly,
-.anim-capture {
-    width: 85%;
-    height: 85%;
-    object-fit: contain;
-}
-
-/* .anim-trail — the motion streak — is styled in the shared
-   assets/css/board-layout.css, alongside the drawMotionTrail() helper it
-   belongs to in assets/js/board-core.js. */
-
-.drag-ghost {
-    width: auto;
-    height: auto;
-    opacity: 0.95;
-    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
-}
-
-/* PROMOTION PICKER */
-
-.promotion-popup {
-    position: fixed;
-    z-index: 1200;
-    background: rgba(20, 20, 22, 0.85);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.promotion-piece {
-    aspect-ratio: 1;
+.pz-retired-page {
+    min-height: 100vh;
+    margin-left: var(--cheese-sidebar-w);
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s ease, transform 0.15s ease;
+    padding: 40px 28px;
+    background: radial-gradient(ellipse at 50% 42%, rgba(6, 9, 16, 0.12), rgba(6, 9, 16, 0.45));
 }
 
-.promotion-piece:hover { background: rgba(255, 255, 255, 0.14); transform: scale(1.06); }
-.promotion-piece:first-child { border-radius: 10px 10px 0 0; }
-.promotion-piece:last-child  { border-radius: 0 0 10px 10px; }
-.promotion-piece + .promotion-piece { border-top: 1px solid rgba(255, 255, 255, 0.07); }
-
-/* =====================
-   SIDEBAR PANEL
-   ===================== */
-
-.pz-panel {
-    width: 100%;
-    height: 100%;
-    background: rgba(12, 16, 28, 0.78);
-    backdrop-filter: blur(26px) saturate(130%);
-    -webkit-backdrop-filter: blur(26px) saturate(130%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 14px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.42);
-    display: flex;
-    flex-direction: column;
-    gap: clamp(10px, 1.4vh, 18px);
-    padding: clamp(16px, 2vh, 24px);
-    overflow-y: auto;
+.pz-retired-card {
+    width: min(100%, 560px);
+    padding: 42px 38px 30px;
+    background: rgba(20, 20, 22, 0.82);
 }
 
-/* HEADER */
-
-.pz-panel-header {
-    display: flex;
-    align-items: baseline;
-    padding-bottom: clamp(8px, 1.2vh, 14px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.pz-retired-emblem {
+    width: 66px;
+    height: 66px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 24px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.055);
+    color: rgba(255, 255, 255, 0.8);
 }
 
-/* HEADER STAT — puzzle count, signed-out; the user's own rating, signed-in.
-   This is now the whole header, shown directly with no label — see the
-   puzzle-rating plan for why the earlier "Puzzles" title + separate label
-   were removed. */
-
-.pz-header-stat {
-    position: relative;
-    display: flex;
-    align-items: baseline;
+.pz-retired-emblem svg {
+    width: 44px;
+    height: 44px;
 }
 
-.pz-header-stat-value {
-    font-size: clamp(11px, 0.85vw, 13px);
-    color: rgba(233, 238, 246, 0.45);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+.pz-retired-card .cheese-error-code {
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
 }
 
-/* Signed-in rating reads as the page's headline number, replacing the
-   "Puzzles" title that used to occupy this spot. */
-.pz-header-stat-rating .pz-header-stat-value {
-    font-size: clamp(20px, 1.7vw, 28px);
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    color: #eef1f8;
+.pz-retired-card .cheese-error-title {
+    font-size: clamp(25px, 2.4vw, 30px);
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
 }
 
-/* RATING POPUP — a transient +N/-N after each solve, anchored to the header stat. */
-
-.pz-rating-popup {
-    position: absolute;
-    top: -2px;
-    right: 0;
-    font-size: 13px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    pointer-events: none;
-    opacity: 0;
-    white-space: nowrap;
+.pz-retired-card .cheese-error-text {
+    line-height: 1.8;
 }
 
-.pz-rating-popup-play {
-    animation: pzRatingPop 1100ms ease forwards;
-}
-
-.pz-rating-popup-up { color: #58c878; }
-.pz-rating-popup-down { color: #e8503e; }
-
-@keyframes pzRatingPop {
-    0%   { opacity: 0; transform: translateY(4px); }
-    15%  { opacity: 1; transform: translateY(0); }
-    70%  { opacity: 1; transform: translateY(-10px); }
-    100% { opacity: 0; transform: translateY(-18px); }
-}
-
-/* STATUS BANNER */
-
-.pz-status {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: clamp(10px, 1.4vh, 15px) 14px;
-    border-radius: 11px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    background: rgba(255, 255, 255, 0.05);
-    transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-.pz-status-icon {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
-}
-
-.pz-status-text { min-width: 0; }
-
-.pz-status-title {
-    font-size: clamp(13px, 1vw, 16px);
-    font-weight: 700;
-    color: #f2f5fb;
-    letter-spacing: 0.2px;
-}
-
-.pz-status-sub {
-    font-size: clamp(11px, 0.82vw, 13px);
-    color: rgba(233, 238, 246, 0.62);
-    margin-top: 2px;
-}
-
-/* Status variants */
-
-.pz-status-solving  { background: rgba(96, 165, 250, 0.10); border-color: rgba(96, 165, 250, 0.32); }
-.pz-status-solving  .pz-status-icon { background: #60a5fa; box-shadow: 0 0 12px rgba(96, 165, 250, 0.7); }
-
-.pz-status-correct  { background: rgba(88, 200, 120, 0.12); border-color: rgba(88, 200, 120, 0.34); }
-.pz-status-correct  .pz-status-icon { background: #58c878; box-shadow: 0 0 12px rgba(88, 200, 120, 0.7); }
-
-.pz-status-wrong    { background: rgba(232, 80, 62, 0.12); border-color: rgba(232, 80, 62, 0.34); }
-.pz-status-wrong    .pz-status-icon { background: #e8503e; box-shadow: 0 0 12px rgba(232, 80, 62, 0.7); }
-
-/* Solved with a wrong move along the way, or with a hint used — yellow. */
-.pz-status-solved   { background: rgba(255, 205, 92, 0.13); border-color: rgba(255, 205, 92, 0.36); }
-.pz-status-solved   .pz-status-icon { background: #ffcd5c; box-shadow: 0 0 14px rgba(255, 205, 92, 0.75); }
-
-/* Solved cleanly, no wrong moves or hints — green. */
-.pz-status-clean    { background: rgba(88, 200, 120, 0.14); border-color: rgba(88, 200, 120, 0.4); }
-.pz-status-clean    .pz-status-icon { background: #58c878; box-shadow: 0 0 14px rgba(88, 200, 120, 0.75); }
-
-/* META */
-
-.pz-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.pz-meta-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.pz-retired-card .cheese-error-btn {
     gap: 10px;
-    font-size: clamp(12px, 0.9vw, 14px);
 }
 
-.pz-meta-label {
-    color: rgba(233, 238, 246, 0.5);
-    letter-spacing: 0.3px;
-}
-
-.pz-meta-value {
-    color: #eef1f8;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-}
-
-/* SECTIONS */
-
-.pz-section {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-}
-
-.pz-section-label {
-    font-size: clamp(10px, 0.75vw, 12px);
-    font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    color: rgba(233, 238, 246, 0.4);
-}
-
-/* DIFFICULTY PRESETS */
-
-.pz-presets {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-}
-
-.pz-preset {
-    font-family: inherit;
-    font-size: clamp(11px, 0.8vw, 13px);
-    font-weight: 600;
-    padding: 8px 4px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(233, 238, 246, 0.7);
-    cursor: pointer;
-    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
-}
-
-.pz-preset:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    transform: translateY(-1px);
-}
-
-.pz-preset-active {
-    background: rgba(96, 165, 250, 0.18);
-    border-color: rgba(96, 165, 250, 0.42);
-    color: #fff;
-}
-
-/* CUSTOM RANGE */
-
-.pz-range {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-}
-
-.pz-range-field {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-}
-
-.pz-range-field span {
-    font-size: clamp(10px, 0.72vw, 11px);
-    color: rgba(233, 238, 246, 0.42);
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-}
-
-.pz-range-field input {
-    font-family: inherit;
-    font-size: clamp(12px, 0.9vw, 14px);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    width: 100%;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.28);
-    color: #eef1f8;
-    outline: none;
-    transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.pz-range-field input:focus {
-    border-color: rgba(96, 165, 250, 0.55);
-    background: rgba(0, 0, 0, 0.4);
-}
-
-.pz-range-dash {
-    color: rgba(233, 238, 246, 0.35);
-    padding-bottom: 9px;
-}
-
-/* ACTIONS */
-
-.pz-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: auto;
-}
-
-.pz-actions-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.pz-btn {
-    font-family: inherit;
-    font-size: clamp(12px, 0.92vw, 15px);
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    padding: clamp(9px, 1.3vh, 13px) 14px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.06);
-    color: #eef1f8;
-    cursor: pointer;
-    transition: background 0.16s ease, transform 0.12s ease, border-color 0.16s ease, opacity 0.16s ease;
-}
-
-.pz-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-}
-
-.pz-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.pz-btn-primary {
-    background: rgba(96, 165, 250, 0.22);
-    border-color: rgba(96, 165, 250, 0.45);
-}
-
-.pz-btn-primary:hover:not(:disabled) {
-    background: rgba(96, 165, 250, 0.32);
-}
-
-.pz-btn-wide { width: 100%; }
-
-/* SESSION STATS */
-
-.pz-session {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding-top: clamp(10px, 1.4vh, 15px);
+.pz-retired-note {
+    margin-top: 28px;
+    padding-top: 22px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(233, 238, 246, 0.45);
+    font-size: 12px;
+    line-height: 1.5;
 }
 
-.pz-session-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-.pz-session-value {
-    font-size: clamp(17px, 1.4vw, 23px);
-    font-weight: 800;
-    color: #eef1f8;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-}
-
-.pz-session-label {
-    font-size: clamp(9px, 0.7vw, 11px);
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: rgba(233, 238, 246, 0.42);
-}
-
-/* =====================
-   TOAST (shared with board-core.js showToast)
-   ===================== */
-
-.ap-toast {
-    position: fixed;
-    bottom: 28px;
-    left: 50%;
-    transform: translateX(-50%) translateY(12px);
-    background: #000;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #eef1f8;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    border-radius: 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.22s ease, transform 0.22s ease;
-    z-index: 1400;
-}
-
-.ap-toast-visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+@media (prefers-reduced-motion: reduce) {
+    .pz-retired-card { animation: none; }
+    .pz-retired-card .cheese-error-btn { transition: none; }
 }

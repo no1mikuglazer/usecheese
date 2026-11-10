@@ -1,0 +1,105 @@
+/* Shared retirement notice: the site's neutral glass, knight mark and white CTA.
+   Native dialog's top layer also sits above the desktop-only mobile gate. */
+dialog.retirement-notice {
+    box-sizing: border-box;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(540px, calc(100vw - 40px));
+    max-width: none;
+    max-height: calc(100dvh - 40px);
+    padding: 36px;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    background: rgba(20,20,22,0.94);
+    color: rgba(255,255,255,0.94);
+    box-shadow: 0 28px 90px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+    backdrop-filter: blur(22px) saturate(130%);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    font: 14px/1.7 Arial, sans-serif;
+    text-align: left;
+}
+
+/* Overrides the mobile gate's body-child hiding rule for this dialog only. */
+body > dialog.retirement-notice[open] { display: block !important; }
+
+html:has(dialog.retirement-notice[open]),
+body:has(> dialog.retirement-notice[open]) { overflow: hidden; }
+
+.retirement-notice::backdrop {
+    background: rgba(0,0,0,0.62);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+}
+
+.retirement-notice .retirement-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 26px;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.retirement-brand svg { width: 38px; height: 38px; color: rgba(255,255,255,0.8); }
+
+.retirement-notice .retirement-eyebrow {
+    margin: 0 0 12px;
+    color: rgba(255,255,255,0.5);
+    font-size: 11px;
+    letter-spacing: 0.65px;
+    text-transform: uppercase;
+}
+
+.retirement-eyebrow span { margin: 0 5px; }
+
+.retirement-notice h1 {
+    margin: 0 0 20px;
+    font-size: clamp(26px, 3.2vw, 32px);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.7px;
+    color: #f2f3f5;
+}
+
+.retirement-message { color: rgba(255,255,255,0.7); }
+.retirement-message p { margin: 0 0 14px; }
+.retirement-message p:last-child { color: rgba(255,255,255,0.88); }
+
+.retirement-notice .retirement-thanks {
+    margin: 24px 0;
+    padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+}
+
+.retirement-notice form { margin: 0; }
+.retirement-continue {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 18px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.92);
+    color: #0b0f1a;
+    font: 600 13px/1.5 Arial, sans-serif;
+    cursor: pointer;
+    transition: background 0.16s ease;
+}
+.retirement-continue:hover { background: #fff; }
+.retirement-continue:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+@media (max-width: 480px) {
+    dialog.retirement-notice { padding: 26px 24px; }
+    .retirement-notice .retirement-brand { margin-bottom: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .retirement-continue { transition: none; }
+}
